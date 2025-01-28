@@ -1,0 +1,23 @@
+{
+  "name": "static-web-page",
+  "version": "1.0.0",
+  "description": "A static web page project that connects to APIs.",
+  "main": "src/index.html",
+  "scripts": {
+    "build": "webpack --mode production",
+    "start": "webpack serve --mode development"
+  },
+  "dependencies": {
+    "axios": "^0.21.1"
+  },
+  "devDependencies": {
+    "webpack": "^5.0.0",
+    "webpack-cli": "^4.0.0",
+    "webpack-dev-server": "^3.11.0",
+    "css-loader": "^5.0.0",
+    "style-loader": "^2.0.0",
+    "html-webpack-plugin": "^5.0.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
