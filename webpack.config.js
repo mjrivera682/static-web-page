@@ -17,7 +17,8 @@ module.exports = {
         new CopyWebpackPlugin({
             patterns: [
                 { from: 'src/styles', to: 'styles' },
-           //     { from: 'src/assets', to: 'assets' }, // Adjusted to match your structure
+                // Remove the assets directory if it doesn't exist
+                // { from: 'src/assets', to: 'assets' },
             ],
         }),
     ],
