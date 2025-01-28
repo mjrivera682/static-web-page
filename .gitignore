@@ -1,0 +1,10 @@
+# Ignore node_modules
+node_modules/
+
+# Ignore build directories (commonly 'dist' or 'build')
+dist/
+build/  # Optional: specify any other relevant build directories
+
+# Ignore any other generated files or folders
+*.log
+*.lock
