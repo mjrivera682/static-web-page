@@ -36,12 +36,38 @@ document.getElementById('login-button').addEventListener('click', function() {
             <button type="submit">Submit</button>
         </form>
     `;
-
     document.getElementById('login-form').addEventListener('submit', function(event) {
         event.preventDefault();
-        replaceButtonsWithLogout();
+        
+        // Obtener los valores de los inputs
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        // Crear el objeto JSON
+        const data = {
+            email: email,
+            password: password
+        };
+
+        // Hacer la consulta a la API
+        fetch('https://eu1.api.indigitall.com/v1/auth', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Success:', data);
+            replaceButtonsWithLogout();
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
     });
 });
+
 
 document.getElementById('signup-button').addEventListener('click', function() {
     const mainContent = document.getElementById('main-content');
