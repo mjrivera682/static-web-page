@@ -24,9 +24,9 @@ jobs:
       - name: Ensure public directory exists
         run: mkdir -p public
         
-      - name: Inject API Key
-        run: echo "window.API_KEY='${{ secrets.INDIGITALL_API_KEY }}';" > public/config.js
-
+      - name: Inject API Key into index.html
+        run: sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' public/index.html
+        
       - name: Build the site
         run: npm run build
 

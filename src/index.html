@@ -24,7 +24,9 @@
         <p>&copy; 2025 Static Web Page</p>
     </footer>
     <script src="scripts/app.js"></script>
-    <script src="config.js"></script>
+    <script>
+        window.INDIGITALL_API_KEY = "{{API_KEY}}"; // Placeholder to be replaced by GitHub Actions
+    </script>
     <script src="./../indigitall/sdk.min.js" onload="
         window.indigitall = indigitall;
         indigitall.init({
