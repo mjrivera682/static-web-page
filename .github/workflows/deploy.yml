@@ -37,21 +37,21 @@ jobs:
 
           echo "After replacement:"
           cat ./dist/index.html | grep API_KEY  # Show state after replacement
+
+      - name: List files after build
+        run: ls -R ./build  # Muestra el contenido de la carpeta build (ajusta si es necesario)
+
+      - name: Inject API Key into build/index.html (after build)
+        run: |
+          echo "Before replacement:"
+          cat ./build/index.html | grep API_KEY  # Ver estado antes de la inyección
+
+          # Reemplazar el valor en build/index.html (después de build)
+          sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' ./build/index.html
+
+          echo "After replacement:"
+          cat ./build/index.html | grep API_KEY  # Ver estado después de la inyección
           
-    - name: List files after build
-      run: ls -R ./build  # Muestra el contenido de la carpeta build (ajusta si es necesario)
-
-    - name: Inject API Key into build/index.html (after build)
-      run: |
-        echo "Before replacement:"
-        cat ./build/index.html | grep API_KEY  # Ver estado antes de la inyección
-
-        # Reemplazar el valor en build/index.html (después de build)
-        sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' ./build/index.html
-
-        echo "After replacement:"
-        cat ./build/index.html | grep API_KEY  # Ver estado después de la inyección
-        
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
