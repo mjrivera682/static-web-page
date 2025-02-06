@@ -17,8 +17,7 @@ module.exports = {
         new CopyWebpackPlugin({
             patterns: [
                 { from: 'src/styles', to: 'styles' },
-                // Remove the assets directory if it doesn't exist
-                // { from: 'src/assets', to: 'assets' },
+                { from: 'public', to: '' }, // Add this line to copy the public directory
             ],
         }),
     ],
