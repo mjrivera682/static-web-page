@@ -28,9 +28,6 @@ jobs:
       - name: List files after build
         run: ls -R ./dist | grep -v '^./node_modules/' # Check the files in the build folder
 
-      - name: Ensure public directory exists
-        run: mkdir -p public
-    
       - name: Inject API Key into index.html
         run: |
           echo "Before replacement:"
