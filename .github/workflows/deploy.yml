@@ -34,9 +34,12 @@ jobs:
           echo "After replacement:"
           cat ./src/index.html | grep API_KEY  # Show state after replacement
 
-
       - name: Build the site
         run: npm run build
+
+      - name: Debug index.html After Build
+        run: cat ./src/index.html | grep API_KEY
+        working-directory: ./src  # Change `dist` if needed
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
