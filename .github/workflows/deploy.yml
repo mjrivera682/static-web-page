@@ -26,7 +26,7 @@ jobs:
         run: npm run build
 
       - name: List files after build
-        run: ls -R .  # Check the files in the build folder
+        run: ls -R . | grep -v '^./node_modules/' # Check the files in the build folder
 
       - name: Ensure public directory exists
         run: mkdir -p public
