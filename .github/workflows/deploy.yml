@@ -25,8 +25,8 @@ jobs:
         run: mkdir -p public
         
       - name: Inject API Key into index.html
-        run: sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' public/index.html
-        
+        run: sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' ./src/index.html
+
       - name: Build the site
         run: npm run build
 
