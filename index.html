@@ -28,7 +28,7 @@
         window.INDIGITALL_API_KEY = "94cb9c3e-0749-450f-8445-49bf2b269d8a"; // Placeholder to be replaced by GitHub Actions
     </script>
     <script src="./../indigitall/sdk.min.js" onload="
-      
+      console.log(window.INDIGITALL_API_KEY);
         indigitall.init({
             appKey: window.INDIGITALL_API_KEY,  // Load API key from config.js
             logLevel: indigitall.LogLevel.DEBUG,
