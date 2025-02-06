@@ -21,37 +21,27 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+    
+      - name: Build the site
+        run: npm run build
+
       - name: Ensure public directory exists
         run: mkdir -p public
-        
-      - name: Inject API Key into index.html (before build)
+    
+      - name: Inject API Key into index.html
         run: |
           echo "Before replacement:"
           cat ./src/index.html | grep API_KEY  # Show current state before replacement
-
-          # Move to dist folder if that’s where the built files go
-          cp ./src/index.html ./dist/index.html
-
-          # Replace the placeholder in dist/index.html
-          sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' ./dist/index.html
-
-          echo "After replacement:"
-          cat ./dist/index.html | grep API_KEY  # Show state after replacement
-
-      - name: List files after build
-        run: ls -R ./build  # Muestra el contenido de la carpeta build (ajusta si es necesario)
-
-      - name: Inject API Key into build/index.html (after build)
-        run: |
-          echo "Before replacement:"
-          cat ./build/index.html | grep API_KEY  # Ver estado antes de la inyección
-
-          # Reemplazar el valor en build/index.html (después de build)
-          sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' ./build/index.html
-
-          echo "After replacement:"
-          cat ./build/index.html | grep API_KEY  # Ver estado después de la inyección
           
+          sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' ./src/index.html
+
+          echo "After replacement:"
+          cat ./src/index.html | grep API_KEY  # Show state after replacement
+
+      - name: Debug index.html After Build
+        run: cat src/index.html | grep API_KEY
+        working-directory: dist  # Change `dist` if needed
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
