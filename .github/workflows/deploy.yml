@@ -29,7 +29,7 @@ jobs:
           echo "Before replacement:"
           cat index.html | grep API_KEY  # Show current state before replacement
           
-          sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' index.html
+          sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' ./src/index.html
 
           echo "After replacement:"
           cat index.html | grep API_KEY  # Show state after replacement
