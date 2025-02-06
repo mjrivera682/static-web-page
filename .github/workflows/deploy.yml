@@ -42,6 +42,13 @@ jobs:
         run: cat ./dist/index.html | grep API_KEY  # Check the file in the dist folder after build
         working-directory: dist  # Ensure we're looking in the right directory
 
+      - name: List files in dist/ and check if index.html exists
+        run: |
+          echo "Listing files in dist/"
+          ls -l ./dist
+          echo "Trying to cat index.html:"
+          cat ./dist/index.html || echo "index.html not found"
+          
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
