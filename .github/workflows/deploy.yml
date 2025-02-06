@@ -39,7 +39,7 @@ jobs:
 
       - name: Debug index.html After Build
         run: cat src/index.html | grep API_KEY
-        working-directory: src  # Change `dist` if needed
+        working-directory: dist  # Change `dist` if needed
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
