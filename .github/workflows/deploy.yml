@@ -24,7 +24,7 @@ jobs:
     
       - name: Build the site
         run: npm run build
-
+ 
       - name: List files after build
         run: ls -R . | grep -v '^./node_modules/' # Check the files in the build folder
 
@@ -42,7 +42,7 @@ jobs:
           cat ./src/index.html | grep API_KEY  # Show state after replacement
 
       - name: Debug index.html After Build
-        run: cat ./dist/index.html | grep API_KEY  # Check the file in the dist folder after build
+        run: cat ./dist/index1.html | grep API_KEY  # Check the file in the dist folder after build
         working-directory: dist  # Ensure we're looking in the right directory
 
       - name: Deploy to GitHub Pages
