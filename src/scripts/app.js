@@ -146,15 +146,3 @@ function registeredEmails() {
 
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const script = document.createElement('script');
-    script.src = 'config.js';
-    script.onload = () => {
-        console.log('Config loaded:', window.API_KEY);
-    };
-    script.onerror = () => {
-        console.error('Failed to load config.js');
-    };
-    document.head.appendChild(script);
-});
-

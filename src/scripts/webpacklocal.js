@@ -26,7 +26,7 @@ module.exports = {
         ],
     },
     devServer: {
-        contentBase: [path.join(__dirname, 'dist'), path.join(__dirname, 'public')], // Serve both dist and public directories
+        contentBase: path.join(__dirname, 'dist'),
         compress: true,
         port: 9000,
     },

@@ -24,11 +24,11 @@
         <p>&copy; 2025 Static Web Page</p>
     </footer>
     <script src="scripts/app.js"></script>
-    <script src="config.js"></script> <!-- Ensure the path is correct -->
+    <script src="config.js"></script>
     <script src="./../indigitall/sdk.min.js" onload="
         window.indigitall = indigitall;
         indigitall.init({
-            appKey: window.API_KEY,  // Use the injected API key
+            appKey: window.INDIGITALL_API_KEY,  // Load API key from config.js
             logLevel: indigitall.LogLevel.DEBUG,
             workerPath: '/indigitall/worker.min.js',
             requestLocation: true
