@@ -18,6 +18,7 @@ module.exports = {
             patterns: [
                 { from: 'src/styles', to: 'styles' },
                 { from: 'public', to: '' }, // Add this line to copy the public directory
+                { from: 'public/config.js', to: 'config.js' }, // Ensure config.js is copied
             ],
         }),
     ],
