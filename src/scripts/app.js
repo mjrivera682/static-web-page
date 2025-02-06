@@ -45,7 +45,7 @@ document.getElementById('login-button').addEventListener('click', function() {
 
         // Crear el objeto JSON
         const data = {
-            email: email,
+            mail: email,
             password: password
         };
 
