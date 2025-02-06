@@ -27,12 +27,12 @@ jobs:
       - name: Inject API Key into index.html
         run: |
           echo "Before replacement:"
-          cat index.html | grep API_KEY  # Show current state before replacement
+          cat ./src/index.html | grep API_KEY  # Show current state before replacement
           
           sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' ./src/index.html
 
           echo "After replacement:"
-          cat index.html | grep API_KEY  # Show state after replacement
+          cat ./src/index.html | grep API_KEY  # Show state after replacement
 
 
       - name: Build the site
