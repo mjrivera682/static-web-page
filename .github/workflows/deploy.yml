@@ -23,6 +23,7 @@ jobs:
 
       - name: Ensure public directory exists
         run: mkdir -p public
+        
       - name: Inject API Key
         run: echo "window.API_KEY='${{ secrets.INDIGITALL_API_KEY }}';" > public/config.js
 
