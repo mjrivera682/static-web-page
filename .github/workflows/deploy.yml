@@ -24,22 +24,27 @@ jobs:
       - name: Ensure public directory exists
         run: mkdir -p public
         
-      - name: Inject API Key into index.html
+      - name: Inject API Key into index.html (before build)
         run: |
           echo "Before replacement:"
           cat ./src/index.html | grep API_KEY  # Show current state before replacement
-          
-          sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' ./src/index.html
+
+          # Move to dist folder if that’s where the built files go
+          cp ./src/index.html ./dist/index.html
+
+          # Replace the placeholder in dist/index.html
+          sed -i 's/{{API_KEY}}/${{ secrets.INDIGITALL_API_KEY }}/g' ./dist/index.html
 
           echo "After replacement:"
-          cat ./src/index.html | grep API_KEY  # Show state after replacement
+          cat ./dist/index.html | grep API_KEY  # Show state after replacement
 
       - name: Build the site
         run: npm run build
 
       - name: Debug index.html After Build
-        run: cat src/index.html | grep API_KEY
-        working-directory: dist  # Change `dist` if needed
+        run: cat ./dist/index.html | grep API_KEY  # Check the file in the dist folder after build
+        working-directory: dist  # Ensure we're looking in the right directory
+
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
