@@ -26,8 +26,7 @@ jobs:
         
       - name: Inject API Key into index.html
         run: |
-          echo "<script>window.API_KEY='${{ secrets.INDIGITALL_API_KEY }}';</script>" >> index.html
-
+          echo "<script>window.API_KEY='${{ secrets.INDIGITALL_API_KEY }}';</script>" >> ./src/index.html
 
       - name: Build the site
         run: npm run build
