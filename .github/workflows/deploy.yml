@@ -38,9 +38,6 @@ jobs:
           echo "After replacement:"
           cat ./dist/index.html | grep API_KEY  # Show state after replacement
 
-      - name: Debug index.html After Build
-        run: cat ./dist/index.html | grep API_KEY  # Check the file in the dist folder after build
-        working-directory: dist  # Ensure we're looking in the right directory
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
