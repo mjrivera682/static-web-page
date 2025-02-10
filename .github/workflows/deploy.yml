@@ -47,8 +47,9 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           keep_files: true  # Ensures existing files are NOT deleted
-          
+
       - name: Check published files
         run: |
           git clone --depth=1 --branch gh-pages https://github.com/mjrivera682/static-web-page.git gh-pages-check
-          ls -l gh-pages-check/
+          echo "📂 Archivos en gh-pages después del deploy:"
+          find gh-pages-check -type f
