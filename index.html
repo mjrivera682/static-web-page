@@ -6,15 +6,7 @@
     <title>Static Web Page</title>
     <link rel="stylesheet" href="styles/main.css">
 <script defer src="bundle.js"></script></head>
-<script>
-    fetch("/config.json")
-      .then(response => response.json())
-      .then(config => {
-          window.INDIGITALL_API_KEY = config.API_KEY;
-          console.log("Loaded API Key:", window.INDIGITALL_API_KEY);
-      })
-      .catch(error => console.error("Failed to load API key", error));
-  </script>
+
   
 <body>
     <header>
@@ -33,10 +25,16 @@
     <footer>
         <p>&copy; 2025 Static Web Page a ver</p>
     </footer>
-    
     <script>
-        window.INDIGITALL_API_KEY = "{{API_KEY}}"; // Placeholder to be replaced by GitHub Actions
-    </script>
+        fetch("/config.json")
+          .then(response => response.json())
+          .then(config => {
+              window.INDIGITALL_API_KEY = config.API_KEY;
+              console.log("Loaded API Key:", window.INDIGITALL_API_KEY);
+          })
+          .catch(error => console.error("Failed to load API key", error));
+      </script>
+  
     <script src="./../indigitall/sdk.min.js" onload="
       console.log(window.INDIGITALL_API_KEY);
         indigitall.init({
