@@ -27,16 +27,9 @@ jobs:
       - name: List files after build
         run: ls -R ./dist | grep -v '^./node_modules/' # Check the files in the build folder
 
-      - name: Inject API Key into index.html
+      - name: Generate config.json with API Key
         run: |
-          echo "Before replacement:"
-          cat ./dist/index.html | grep "window.INDIGITALL_API_KEY"
-
-          sed -i "s|{{API_KEY}}|${{ secrets.INDIGITALL_API_KEY }}|g" ./dist/index.html
-
-          echo "After replacement:"
-          cat ./dist/index.html | grep "window.INDIGITALL_API_KEY"
-
+          echo "{ \"API_KEY\": \"${{ secrets.INDIGITALL_API_KEY }}\" }" > ./dist/config.json
 
 
       - name: List files in dist/ and check if index.html exists
