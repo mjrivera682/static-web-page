@@ -25,7 +25,7 @@ jobs:
         run: npm run build
 
       - name: Generate test file
-        run: echo "This is a test file" > ./dist/testfile.txt
+        run: echo "This is a test file" > ./dist/testfile.html
 
       - name: Disable Jekyll (allow serving JSON files)
         run: touch ./dist/.nojekyll
