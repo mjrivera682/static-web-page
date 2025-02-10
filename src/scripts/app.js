@@ -72,21 +72,41 @@ document.getElementById('login-button').addEventListener('click', function() {
 document.getElementById('signup-button').addEventListener('click', function() {
     const mainContent = document.getElementById('main-content');
     mainContent.innerHTML = `
-        <form id="signup-form">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" required>
-            <label for="birthdate">Birthdate:</label>
-            <input type="date" id="birthdate" name="birthdate" required>
-            <button type="submit">Submit</button>
-        </form>
+      <form id="signup-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+        <label for="birthdate">Birthdate:</label>
+        <input type="date" id="birthdate" name="birthdate" required>
+        <button type="submit">Submit</button>
+      </form>
     `;
-
+  
     document.getElementById('signup-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-        loadEmails();
+      event.preventDefault();
+      loadEmails();
+  
+      // Obtener los valores de los inputs
+      const nameValue = document.getElementById('name').value;
+      const birthdateValue = document.getElementById('birthdate').value;
+  
+      // Crear un objeto JSON con la información
+      const customData = {
+        name: nameValue,
+        birthdate: birthdateValue
+      };
+  
+      // Enviar el evento con los datos personalizados
+      indigitall.sendCustomEvent({
+        eventType: "step1",
+        customData: customData, // Se envía el objeto JSON con Name y Birthdate
+        async: false, // Llamada sincrónica (ajusta según necesidad)
+      }, (response) => {
+        // Acciones a realizar al recibir respuesta
+      }, (error) => {
+        // Registro de error
+      });
     });
-});
-
+  });
 function replaceButtonsWithLogout() {
     const header = document.querySelector('header');
     header.innerHTML = '<button id="logout-button">Logout</button>';
