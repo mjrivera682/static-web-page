@@ -82,6 +82,7 @@ document.getElementById('signup-button').addEventListener('click', function() {
     indigitall.topicsList((topics) => {
         // success function
         console.log(topics);
+        console.log('Topics list:', topics);
       }, () => {
         // error function
       });
