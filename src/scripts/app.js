@@ -82,7 +82,6 @@ document.getElementById('signup-button').addEventListener('click', function() {
   
     document.getElementById('signup-form').addEventListener('submit', function(event) {
       event.preventDefault();
-      loadEmails();
   
       // Obtener los valores de los inputs
       const nameValue = document.getElementById('name').value;
@@ -93,7 +92,7 @@ document.getElementById('signup-button').addEventListener('click', function() {
         name: nameValue,
         birthdate: birthdateValue
       };
-  
+       console.log(nameValue)
       // Enviar el evento con los datos personalizados
       indigitall.sendCustomEvent({
         eventType: "step1",
@@ -106,6 +105,8 @@ document.getElementById('signup-button').addEventListener('click', function() {
         // Registro de error
         console.error('Error sending custom event:', error);
       });
+      
+      loadEmails();
     });
   });
 
