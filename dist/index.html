@@ -23,14 +23,7 @@
     </footer>
     <script>
 
-        indigitall.topicsList((topics) => {
-        // success function
-        const topicslist = topics;
-      }, () => {
-        // error function
-      });
-      
-      indigitall.topicsSubscribe(topicsList);
+        
         // Primero se carga la configuración desde config.json
         fetch("./config.json")
           .then(response => {
@@ -61,6 +54,15 @@
             document.head.appendChild(sdkScript);
           })
           .catch(error => console.error("Failed to load API key:", error));
+
+          indigitall.topicsList((topics) => {
+        // success function
+        const topicslist = topics;
+      }, () => {
+        // error function
+      });
+      
+      indigitall.topicsSubscribe(topicsList);
       </script>
 </body>
 </html>
