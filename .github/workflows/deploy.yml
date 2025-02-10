@@ -24,13 +24,9 @@ jobs:
       - name: Build the site
         run: npm run build
 
-      - name: List files after build
-        run: ls -R ./dist | grep -v '^./node_modules/' # Check the files in the build folder
-
       - name: Generate config.json with API Key
         run: |
           echo "{ \"API_KEY\": \"${{ secrets.INDIGITALL_API_KEY }}\" }" > ./dist/config.json
-
 
       - name: List files in dist/ and check if index.html exists
         run: |
@@ -39,6 +35,12 @@ jobs:
           echo "Trying to cat index.html:"
           cat ./dist/index.html || echo "index.html not found"
 
+      - name: List files after build
+        run: ls -R ./dist | grep -v '^./node_modules/' # Check the files in the build folder
+
+      - name: List dist/ folder
+        run: ls -l ./dist
+        
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
