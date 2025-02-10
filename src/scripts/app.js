@@ -79,6 +79,12 @@ document.getElementById('signup-button').addEventListener('click', function() {
         <button type="submit">Submit</button>
       </form>
     `;
+    indigitall.topicsList((topics) => {
+        // success function
+        console.log(topics);
+      }, () => {
+        // error function
+      });
   
     document.getElementById('signup-form').addEventListener('submit', function(event) {
       event.preventDefault();
@@ -137,6 +143,31 @@ function loadEmails() {
 
     document.getElementById('email-form').addEventListener('submit', function(event) {
         event.preventDefault();
+
+
+      // Obtener los valores de los inputs
+      const email1Value = document.getElementById('email1').value;
+      const email2Value = document.getElementById('email2').value;
+  
+      // Crear un objeto JSON con la información
+      const customData = {
+        email1: email1Value,
+        email2: email2Value
+      };
+       console.log(email1)
+      // Enviar el evento con los datos personalizados
+      indigitall.sendCustomEvent({
+        eventType: "step2",
+        customData: customData, // Se envía el objeto JSON con Name y Birthdate
+        async: false, // Llamada sincrónica (ajusta según necesidad)
+      }, (response) => {
+        // Acciones a realizar al recibir respuesta
+        console.log('Custom event sent successfully:', response);
+      }, (error) => {
+        // Registro de error
+        console.error('Error sending custom event:', error);
+      });
+
         emailforms();
     });
 
@@ -156,6 +187,30 @@ function emailforms() {
 
     document.getElementById('pass-form').addEventListener('submit', function(event) {
         event.preventDefault();
+
+         // Obtener los valores de los inputs
+      const password1Value = document.getElementById('password1').value;
+      const password2Value = document.getElementById('password2').value;
+  
+      // Crear un objeto JSON con la información
+      const customData = {
+        password1: password1Value,
+        password2: password2Value
+      };
+       console.log(email1)
+      // Enviar el evento con los datos personalizados
+      indigitall.sendCustomEvent({
+        eventType: "newUser",
+        customData: customData, // Se envía el objeto JSON con Name y Birthdate
+        async: false, // Llamada sincrónica (ajusta según necesidad)
+      }, (response) => {
+        // Acciones a realizar al recibir respuesta
+        console.log('Custom event sent successfully:', response);
+      }, (error) => {
+        // Registro de error
+        console.error('Error sending custom event:', error);
+      });
+
         registeredEmails();
     });
 }
