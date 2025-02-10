@@ -19,14 +19,14 @@
     <main id="main-content">
         <p></p>
         <section id="content">
-            <p>This is a static web page that connects to APIs. change</p>
+            <p>This is a static web page that connects to APIs. change1</p>
         </section>
     </main>
     <footer>
         <p>&copy; 2025 Static Web Page</p>
     </footer>
     <script>
-        fetch("config.json") // Ensure correct path
+        fetch("./config.json") // Ensure correct path
           .then(response => {
             if (!response.ok) {
               throw new Error("Config file not found!");
@@ -40,7 +40,7 @@
           .catch(error => console.error("Failed to load API key:", error));
       </script>
   
-    <script src="./../indigitall/sdk.min.js" onload="
+    <script src="./indigitall/sdk.min.js" onload="
       console.log(window.INDIGITALL_API_KEY);
         indigitall.init({
             appKey: window.INDIGITALL_API_KEY,  // Load API key from config.js
