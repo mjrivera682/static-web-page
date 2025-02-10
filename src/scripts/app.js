@@ -68,7 +68,6 @@ document.getElementById('login-button').addEventListener('click', function() {
     });
 });
 
-
 document.getElementById('signup-button').addEventListener('click', function() {
     const mainContent = document.getElementById('main-content');
     mainContent.innerHTML = `
@@ -102,11 +101,14 @@ document.getElementById('signup-button').addEventListener('click', function() {
         async: false, // Llamada sincrónica (ajusta según necesidad)
       }, (response) => {
         // Acciones a realizar al recibir respuesta
+        console.log('Custom event sent successfully:', response);
       }, (error) => {
         // Registro de error
+        console.error('Error sending custom event:', error);
       });
     });
   });
+
 function replaceButtonsWithLogout() {
     const header = document.querySelector('header');
     header.innerHTML = '<button id="logout-button">Logout</button>';
