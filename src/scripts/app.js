@@ -213,7 +213,7 @@ function emailforms() {
         password1: password1Value,
         password2: password2Value
       };
-       console.log(email1)
+       console.log(password1)
       // Enviar el evento con los datos personalizados
 
       indigitall.topicsSubscribe(["incomplete_step3"]);
