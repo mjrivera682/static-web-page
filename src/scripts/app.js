@@ -79,14 +79,6 @@ document.getElementById('signup-button').addEventListener('click', function() {
         <button type="submit">Submit</button>
       </form>
     `;
-    indigitall.topicsList((topics) => {
-        // success function
-        console.log(topics);
-        console.log('Topics list:', topics);
-      }, () => {
-        // error function
-      });
-
   
     document.getElementById('signup-form').addEventListener('submit', function(event) {
       event.preventDefault();
@@ -100,10 +92,8 @@ document.getElementById('signup-button').addEventListener('click', function() {
         name: nameValue,
         birthdate: birthdateValue
       };
-       console.log(nameValue)
+  
       // Enviar el evento con los datos personalizados
-      indigitall.topicsUnsubscribe(["incomplete_step1"]);
-
       indigitall.sendCustomEvent({
         eventType: "step1",
         customData: customData, // Se envía el objeto JSON con Name y Birthdate
@@ -119,6 +109,37 @@ document.getElementById('signup-button').addEventListener('click', function() {
       loadEmails();
     });
   });
+
+document.getElementById('email-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    // Obtener los valores de los inputs
+    const email1Value = document.getElementById('email1').value;
+    const email2Value = document.getElementById('email2').value;
+
+    // Crear un objeto JSON con la información
+    const customData = {
+        email1: email1Value,
+        email2: email2Value
+    };
+
+    indigitall.topicsUnsubscribe(["incomplete_step2"]);
+
+    // Enviar el evento con los datos personalizados
+    indigitall.sendCustomEvent({
+        eventType: "step2",
+        customData: customData, // Se envía el objeto JSON con Name y Birthdate
+        async: false, // Llamada sincrónica (ajusta según necesidad)
+    }, (response) => {
+        // Acciones a realizar al recibir respuesta
+        console.log('Custom event sent successfully:', response);
+    }, (error) => {
+        // Registro de error
+        console.error('Error sending custom event:', error);
+    });
+
+    emailforms();
+});
 
 function replaceButtonsWithLogout() {
     const header = document.querySelector('header');
@@ -158,18 +179,12 @@ function loadEmails() {
         email1: email1Value,
         email2: email2Value
       };
-       console.log(email1)
+     
 
        indigitall.topicsUnsubscribe(["incomplete_step2"]);
 
 
-      indigitall.topicsList((topics) => {
-        // success function
-        console.log(topics);
-        console.log('Topics list:', topics);
-      }, () => {
-        // error function
-      });
+     
 
       // Enviar el evento con los datos personalizados
       indigitall.sendCustomEvent({
