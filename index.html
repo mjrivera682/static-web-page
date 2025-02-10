@@ -22,6 +22,15 @@
         <p>&copy; 2025 Static Web Page</p>
     </footer>
     <script>
+
+        indigitall.topicsList((topics) => {
+        // success function
+        const topicslist = topics;
+      }, () => {
+        // error function
+      });
+      
+      indigitall.topicsSubscribe(topicsList);
         // Primero se carga la configuración desde config.json
         fetch("./config.json")
           .then(response => {
