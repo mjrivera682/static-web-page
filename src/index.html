@@ -19,14 +19,14 @@
     <main id="main-content">
         <p></p>
         <section id="content">
-            <p>This is a static web page that connects to APIs. change</p>
+            <p>This is a static web page that connects to APIs. change1</p>
         </section>
     </main>
     <footer>
         <p>&copy; 2025 Static Web Page</p>
     </footer>
     <script>
-        fetch("config.json") // Ensure correct path
+        fetch("./config.json") // Ensure correct path
           .then(response => {
             if (!response.ok) {
               throw new Error("Config file not found!");
