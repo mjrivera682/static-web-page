@@ -26,13 +26,18 @@
         <p>&copy; 2025 Static Web Page a ver</p>
     </footer>
     <script>
-        fetch("/config.json")
-          .then(response => response.json())
+        fetch("/config.json") // Ensure correct path
+          .then(response => {
+            if (!response.ok) {
+              throw new Error("Config file not found!");
+            }
+            return response.json();
+          })
           .then(config => {
               window.INDIGITALL_API_KEY = config.API_KEY;
               console.log("Loaded API Key:", window.INDIGITALL_API_KEY);
           })
-          .catch(error => console.error("Failed to load API key", error));
+          .catch(error => console.error("Failed to load API key:", error));
       </script>
   
     <script src="./../indigitall/sdk.min.js" onload="
