@@ -38,6 +38,7 @@ jobs:
           echo "After replacement:"
           cat ./dist/index.html | grep API_KEY  # Show state after replacement
 
+
       - name: List files in dist/ and check if index.html exists
         run: |
           echo "Listing files in dist/"
