@@ -73,9 +73,9 @@ document.getElementById('signup-button').addEventListener('click', function() {
     mainContent.innerHTML = `
       <form id="signup-form">
         <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required>
+        <input type="text" id="name" name="name" required autocomplete="name">
         <label for="birthdate">Birthdate:</label>
-        <input type="date" id="birthdate" name="birthdate" required>
+        <input type="date" id="birthdate" name="birthdate" required autocomplete="bday">
         <button type="submit">Submit</button>
       </form>
     `;
