@@ -86,6 +86,7 @@ document.getElementById('signup-button').addEventListener('click', function() {
       }, () => {
         // error function
       });
+
   
     document.getElementById('signup-form').addEventListener('submit', function(event) {
       event.preventDefault();
@@ -101,6 +102,18 @@ document.getElementById('signup-button').addEventListener('click', function() {
       };
        console.log(nameValue)
       // Enviar el evento con los datos personalizados
+      indigitall.TopicsSubscribe(
+        ["incomplete_step1"], 
+        (topic) => {
+          console.log("Successfully subscribed to topic:", topic);
+          // DO SOMETHING
+        }, 
+        (errorCode, messageError) => {
+          console.error("Error subscribing to topic:", errorCode, messageError);
+          // Log error
+        }
+      );
+
       indigitall.sendCustomEvent({
         eventType: "step1",
         customData: customData, // Se envía el objeto JSON con Name y Birthdate
@@ -156,6 +169,27 @@ function loadEmails() {
         email2: email2Value
       };
        console.log(email1)
+
+       indigitall.TopicsSubscribe(
+        ["incomplete_step2"], 
+        (topic) => {
+          console.log("Successfully subscribed to topic:", topic);
+          // DO SOMETHING
+        }, 
+        (errorCode, messageError) => {
+          console.error("Error subscribing to topic:", errorCode, messageError);
+          // Log error
+        }
+      );
+
+      indigitall.topicsList((topics) => {
+        // success function
+        console.log(topics);
+        console.log('Topics list:', topics);
+      }, () => {
+        // error function
+      });
+
       // Enviar el evento con los datos personalizados
       indigitall.sendCustomEvent({
         eventType: "step2",
@@ -200,6 +234,27 @@ function emailforms() {
       };
        console.log(email1)
       // Enviar el evento con los datos personalizados
+
+      indigitall.TopicsSubscribe(
+        ["incomplete_step3"], 
+        (topic) => {
+          console.log("Successfully subscribed to topic:", topic);
+          // DO SOMETHING
+        }, 
+        (errorCode, messageError) => {
+          console.error("Error subscribing to topic:", errorCode, messageError);
+          // Log error
+        }
+      );
+
+      indigitall.topicsList((topics) => {
+        // success function
+        console.log(topics);
+        console.log('Topics list:', topics);
+      }, () => {
+        // error function
+      });
+
       indigitall.sendCustomEvent({
         eventType: "newUser",
         customData: customData, // Se envía el objeto JSON con Name y Birthdate
