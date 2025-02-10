@@ -170,17 +170,8 @@ function loadEmails() {
       };
        console.log(email1)
 
-       indigitall.TopicsSubscribe(
-        ["incomplete_step2"], 
-        (topic) => {
-          console.log("Successfully subscribed to topic:", topic);
-          // DO SOMETHING
-        }, 
-        (errorCode, messageError) => {
-          console.error("Error subscribing to topic:", errorCode, messageError);
-          // Log error
-        }
-      );
+       indigitall.TopicsSubscribe([e.target.id]);
+       
 
       indigitall.topicsList((topics) => {
         // success function
