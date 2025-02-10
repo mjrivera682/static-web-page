@@ -44,7 +44,13 @@ jobs:
           ls -l ./dist
           echo "Trying to cat index.html:"
           cat ./dist/index.html || echo "index.html not found"
-          
+      
+
+      - name: Set environment variable
+        run: echo "SECRET_VALUE=${{ secrets.INDIGITALL_API_KEY}}" >> $GITHUB_ENV
+
+      - name: Use the secret
+        run: echo "The secret is $SECRET_VALUE"  # Solo para pruebas, no hagas esto en producción
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
