@@ -35,12 +35,13 @@
           })
           .then(config => {
               window.INDIGITALL_API_KEY = config.API_KEY;
-              console.log("Loaded API Key:", window.INDIGITALL_API_KEY);
+              console.log("Loaded API Key:");
           })
           .catch(error => console.error("Failed to load API key:", error));
       </script>
   
     <script src="./indigitall/sdk.min.js" onload="
+     window.INDIGITALL_API_KEY = config.API_KEY;
       console.log(window.INDIGITALL_API_KEY);
         indigitall.init({
             appKey: window.INDIGITALL_API_KEY,  // Load API key from config.js
