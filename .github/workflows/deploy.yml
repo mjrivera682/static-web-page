@@ -29,10 +29,15 @@ jobs:
 
       - name: Generate config.json with API Key
         run: |
-          echo '{ "API_KEY": "${{ secrets.INDIGITALL_API_KEY }}" }' > ./dist/config.json
+          echo "{ \"API_KEY\": \"${{ secrets.INDIGITALL_API_KEY }}\" }" > ./dist/config.json
 
-     - name: List dist/ folder
-        run: ls -l ./dist
+
+      - name: List files in dist/ and check if index.html exists
+        run: |
+          echo "Listing files in dist/"
+          ls -l ./dist
+          echo "Trying to cat index.html:"
+          cat ./dist/index.html || echo "index.html not found"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
