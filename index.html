@@ -26,7 +26,8 @@
         <p>&copy; 2025 Static Web Page</p>
     </footer>
     <script>
-        fetch("./config.json") // Ensure correct path
+        // Primero se carga la configuración desde config.json
+        fetch("./config.json")
           .then(response => {
             if (!response.ok) {
               throw new Error("Config file not found!");
@@ -34,21 +35,28 @@
             return response.json();
           })
           .then(config => {
-              window.INDIGITALL_API_KEY = config.API_KEY;
-              console.log("Loaded API Key:");
+            // Asignamos la API key a una variable global
+            window.INDIGITALL_API_KEY = config.API_KEY;
+            console.log("Loaded API Key.");
+      
+            // Creamos dinámicamente la etiqueta de script para cargar el SDK
+            var sdkScript = document.createElement("script");
+            sdkScript.src = "./indigitall/sdk.min.js";
+            sdkScript.onload = function() {
+              // Una vez cargado el SDK, inicializamos la librería usando la API key
+              console.log("sdk.min.js loaded.");
+              indigitall.init({
+                appKey: window.INDIGITALL_API_KEY,
+                logLevel: indigitall.LogLevel.DEBUG,
+                workerPath: '/indigitall/worker.min.js',
+                requestLocation: true
+              });
+            };
+            // Insertamos el script en el <head> (o en el <body> según convenga)
+            document.head.appendChild(sdkScript);
           })
           .catch(error => console.error("Failed to load API key:", error));
       </script>
-  
-    <script src="./indigitall/sdk.min.js" onload="
-     window.INDIGITALL_API_KEY = config.API_KEY;
-      console.log(window.INDIGITALL_API_KEY);
-        indigitall.init({
-            appKey: window.INDIGITALL_API_KEY,  // Load API key from config.js
-            logLevel: indigitall.LogLevel.DEBUG,
-            workerPath: '/indigitall/worker.min.js',
-            requestLocation: true
-        })">
-    </script>
+      
 </body>
 </html>
