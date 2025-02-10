@@ -102,17 +102,7 @@ document.getElementById('signup-button').addEventListener('click', function() {
       };
        console.log(nameValue)
       // Enviar el evento con los datos personalizados
-      indigitall.TopicsSubscribe(
-        ["incomplete_step1"], 
-        (topic) => {
-          console.log("Successfully subscribed to topic:", topic);
-          // DO SOMETHING
-        }, 
-        (errorCode, messageError) => {
-          console.error("Error subscribing to topic:", errorCode, messageError);
-          // Log error
-        }
-      );
+      indigitall.topicsSubscribe(["incomplete_step1"]);
 
       indigitall.sendCustomEvent({
         eventType: "step1",
@@ -170,8 +160,8 @@ function loadEmails() {
       };
        console.log(email1)
 
-       indigitall.TopicsSubscribe([e.target.id]);
-       
+       indigitall.topicsSubscribe(["incomplete_step2"]);
+
 
       indigitall.topicsList((topics) => {
         // success function
@@ -226,17 +216,7 @@ function emailforms() {
        console.log(email1)
       // Enviar el evento con los datos personalizados
 
-      indigitall.TopicsSubscribe(
-        ["incomplete_step3"], 
-        (topic) => {
-          console.log("Successfully subscribed to topic:", topic);
-          // DO SOMETHING
-        }, 
-        (errorCode, messageError) => {
-          console.error("Error subscribing to topic:", errorCode, messageError);
-          // Log error
-        }
-      );
+      indigitall.topicsSubscribe(["incomplete_step3"]);
 
       indigitall.topicsList((topics) => {
         // success function
