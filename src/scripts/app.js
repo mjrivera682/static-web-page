@@ -102,7 +102,7 @@ document.getElementById('signup-button').addEventListener('click', function() {
       };
        console.log(nameValue)
       // Enviar el evento con los datos personalizados
-      indigitall.topicsSubscribe(["incomplete_step1"]);
+      indigitall.topicsUnsubscribe(["incomplete_step1"]);
 
       indigitall.sendCustomEvent({
         eventType: "step1",
@@ -160,7 +160,7 @@ function loadEmails() {
       };
        console.log(email1)
 
-       indigitall.topicsSubscribe(["incomplete_step2"]);
+       indigitall.topicsUnsubscribe(["incomplete_step2"]);
 
 
       indigitall.topicsList((topics) => {
@@ -216,7 +216,7 @@ function emailforms() {
        console.log(password1)
       // Enviar el evento con los datos personalizados
 
-      indigitall.topicsSubscribe(["incomplete_step3"]);
+      indigitall.topicsUnsubscribe(["incomplete_step3"]);
 
       indigitall.topicsList((topics) => {
         // success function
