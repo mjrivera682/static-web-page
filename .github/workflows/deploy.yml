@@ -43,6 +43,10 @@ jobs:
       - name: List dist/ folder
         run: ls -l ./dist
         
+      - name: Clean GitHub Pages branch before deploy
+        run: rm -rf gh-pages-check
+
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
