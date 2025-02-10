@@ -24,9 +24,8 @@ jobs:
       - name: Build the site
         run: npm run build
 
-      - name: Generate config.json with API Key (test)
-        run: |
-          echo "{\"API_KEY\": \"${{ secrets.INDIGITALL_API_KEY }}\"}" > ./dist/config.json
+      - name: Generate test file
+        run: echo "This is a test file" > ./dist/config.jsonZZ
 
       - name: Disable Jekyll (allow serving JSON files)
         run: touch ./dist/.nojekyll
