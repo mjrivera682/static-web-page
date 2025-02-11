@@ -48,7 +48,8 @@ document.getElementById('login-button').addEventListener('click', function() {
             mail: email,
             password: password
         };
-        indigitall.logIn("YOUR_ID", (device)=>{
+        console.log("device:",device);
+        indigitall.InApp.logIn("YOUR_ID", (hash)=>{
           //DO SOMETHING
      }, (error)=>{
          //LOG ERROR
