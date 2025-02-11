@@ -114,7 +114,7 @@ function replaceButtonsWithLogout() {
     `;
     document.getElementById('logout-button').addEventListener('click', function() {
       //Disconnection
-      indigitall.logOut((device)=>{
+      indigitall.logout((device)=>{
         //DO SOMETHING
         console.log("logout:");
       }, (error)=>{
