@@ -59,6 +59,7 @@ document.getElementById('login-button').addEventListener('click', function() {
          //LOG ERROR
      });
      
+     replaceButtonsWithLogout();
     });
 });
 
