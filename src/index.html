@@ -47,12 +47,12 @@
                 logLevel: indigitall.LogLevel.DEBUG,
                 workerPath: './indigitall/worker.min.js',
                 requestLocation: true
+              }, function() {
+                // Llamar a topicsList y topicsSubscribe después de la inicialización
+                const nameValue = window.indigitall.topicsList();
+                indigitall.topicsSubscribe(topics);
               });
-
-
             };
-            const nameValue = window.indigitall.topicsList();
-      indigitall.topicsSubscribe(topics);
             // Insertamos el script en el <head> (o en el <body> según convenga)
             document.head.appendChild(sdkScript);
           })
