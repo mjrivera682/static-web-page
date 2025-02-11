@@ -48,23 +48,12 @@ document.getElementById('login-button').addEventListener('click', function() {
             mail: email,
             password: password
         };
-
-        // Hacer la consulta a la API
-        fetch('https://eu1.api.indigitall.com/v1/auth', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Success:', data);
-            replaceButtonsWithLogout();
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
+        indigitall.logIn("YOUR_ID", (device)=>{
+          //DO SOMETHING
+     }, (error)=>{
+         //LOG ERROR
+     });
+     
     });
 });
 
@@ -149,10 +138,19 @@ function replaceButtonsWithLogout() {
          <p>You are logged in.</p>
     `;
     document.getElementById('logout-button').addEventListener('click', function() {
-        location.reload();
+      //Disconnection
+      indigitall.logOut((device)=>{
+        //DO SOMETHING
+      }, (error)=>{
+        //LOG ERROR
+      }); 
+      location.reload();
     });
 }
 
+function onIndigitallInitialized(permissions,device){
+  console.log("Device: ", device)
+}
 
 function loadEmails() {
     const mainContent = document.getElementById('main-content');

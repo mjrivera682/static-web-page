@@ -43,6 +43,7 @@
             sdkScript.onload = function() {
               // Una vez cargado el SDK, inicializamos la librería usando la API key
               console.log("sdk.min.js loaded.");
+              onInitialized: onIndigitallInitialized;
               indigitall.init({
                 appKey: window.INDIGITALL_API_KEY,
                 logLevel: indigitall.LogLevel.DEBUG,
