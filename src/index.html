@@ -50,6 +50,7 @@
               }, function() {
                 // Llamar a topicsList y topicsSubscribe después de la inicialización
                 const topics = window.indigitall.topicsList();
+                console.log(topics)
                 indigitall.topicsSubscribe(topics);
               });
             };
