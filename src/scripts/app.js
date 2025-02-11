@@ -148,18 +148,18 @@ function replaceButtonsWithLogout() {
     });
 }
 
-function onIndigitallInitialized(permissions,device){
-  console.log("Device: ", device)
+function onIndigitallInitialized(permissions, device) {
+  console.log("Device: ", device) // Initialization logic
 }
 
 function loadEmails() {
     const mainContent = document.getElementById('main-content');
     mainContent.innerHTML = `
         <form id="email-form">
-            <label for="email">Email:</label>
-            <input type="email" id="email1" name="email" required>
-            <label for="email">Email2:</label>
-            <input type="email" id="email2" name="email" required>
+            <label for="email1">Email:</label>
+            <input type="email" id="email1" name="email1" required>
+            <label for="email2">Email2:</label>
+            <input type="email" id="email2" name="email2" required>
             <button type="submit">Submit</button>
         </form>
     `;
@@ -167,49 +167,43 @@ function loadEmails() {
     document.getElementById('email-form').addEventListener('submit', function(event) {
         event.preventDefault();
 
+        // Obtener los valores de los inputs
+        const email1Value = document.getElementById('email1').value;
+        const email2Value = document.getElementById('email2').value;
 
-      // Obtener los valores de los inputs
-      const email1Value = document.getElementById('email1').value;
-      const email2Value = document.getElementById('email2').value;
-  
-      // Crear un objeto JSON con la información
-      const customData = {
-        email1: email1Value,
-        email2: email2Value
-      };
-     
+        // Crear un objeto JSON con la información
+        const customData = {
+            email1: email1Value,
+            email2: email2Value
+        };
 
-       indigitall.topicsUnsubscribe(["incomplete_step2"]);
+        indigitall.topicsUnsubscribe(["incomplete_step2"]);
 
-
-     
-
-      // Enviar el evento con los datos personalizados
-      indigitall.sendCustomEvent({
-        eventType: "step2",
-        customData: customData, // Se envía el objeto JSON con Name y Birthdate
-        async: false, // Llamada sincrónica (ajusta según necesidad)
-      }, (response) => {
-        // Acciones a realizar al recibir respuesta
-        console.log('Custom event sent successfully:', response);
-      }, (error) => {
-        // Registro de error
-        console.error('Error sending custom event:', error);
-      });
+        // Enviar el evento con los datos personalizados
+        indigitall.sendCustomEvent({
+            eventType: "step2",
+            customData: customData, // Se envía el objeto JSON con Name y Birthdate
+            async: false, // Llamada sincrónica (ajusta según necesidad)
+        }, (response) => {
+            // Acciones a realizar al recibir respuesta
+            console.log('Custom event sent successfully:', response);
+        }, (error) => {
+            // Registro de error
+            console.error('Error sending custom event:', error);
+        });
 
         emailforms();
     });
-
 }
 
 function emailforms() {
     const mainContent = document.getElementById('main-content');
     mainContent.innerHTML = `
         <form id="pass-form">
-            <label for="password">Password:</label>
-            <input type="password" id="password1" name="password" required>
-            <label for="password">Password:</label>
-            <input type="password" id="password2" name="password" required>
+            <label for="password1">Password:</label>
+            <input type="password" id="password1" name="password1" required>
+            <label for="password2">Password:</label>
+            <input type="password" id="password2" name="password2" required>
             <button type="submit">Submit</button>
         </form>
     `;
@@ -217,39 +211,28 @@ function emailforms() {
     document.getElementById('pass-form').addEventListener('submit', function(event) {
         event.preventDefault();
 
-         // Obtener los valores de los inputs
-      const password1Value = document.getElementById('password1').value;
-      const password2Value = document.getElementById('password2').value;
-  
-      // Crear un objeto JSON con la información
-      const customData = {
-        password1: password1Value,
-        password2: password2Value
-      };
-       console.log(password1)
-      // Enviar el evento con los datos personalizados
+        // Obtener los valores de los inputs
+        const password1Value = document.getElementById('password1').value;
+        const password2Value = document.getElementById('password2').value;
 
-      indigitall.topicsUnsubscribe(["incomplete_step3"]);
+        // Crear un objeto JSON con la información
+        const customData = {
+            password1: password1Value,
+            password2: password2Value
+        };
 
-      indigitall.topicsList((topics) => {
-        // success function
-        console.log(topics);
-        console.log('Topics list:', topics);
-      }, () => {
-        // error function
-      });
-
-      indigitall.sendCustomEvent({
-        eventType: "newUser",
-        customData: customData, // Se envía el objeto JSON con Name y Birthdate
-        async: false, // Llamada sincrónica (ajusta según necesidad)
-      }, (response) => {
-        // Acciones a realizar al recibir respuesta
-        console.log('Custom event sent successfully:', response);
-      }, (error) => {
-        // Registro de error
-        console.error('Error sending custom event:', error);
-      });
+        // Enviar el evento con los datos personalizados
+        indigitall.sendCustomEvent({
+            eventType: "step3",
+            customData: customData, // Se envía el objeto JSON con Name y Birthdate
+            async: false, // Llamada sincrónica (ajusta según necesidad)
+        }, (response) => {
+            // Acciones a realizar al recibir respuesta
+            console.log('Custom event sent successfully:', response);
+        }, (error) => {
+            // Registro de error
+            console.error('Error sending custom event:', error);
+        });
 
         registeredEmails();
     });
@@ -260,7 +243,5 @@ function registeredEmails() {
     mainContent.innerHTML = `
          <p>Your emails were registered.</p>
     `;
-
-
 }
 
