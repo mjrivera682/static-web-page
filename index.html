@@ -46,8 +46,7 @@
                 logLevel: indigitall.LogLevel.DEBUG,
                 workerPath: './indigitall/worker.min.js',
                 requestLocation: true
-              });
-
+              }, onIndigitallInitialized);
             };
             // Insertamos el script en el <head> (o en el <body> según convenga)
             document.head.appendChild(sdkScript);
