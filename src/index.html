@@ -51,12 +51,13 @@
 
 
             };
+            const nameValue = window.indigitall.topicsList();
+      indigitall.topicsSubscribe(topics);
             // Insertamos el script en el <head> (o en el <body> según convenga)
             document.head.appendChild(sdkScript);
           })
           .catch(error => console.error("Failed to load API key:", error));
-      const nameValue = window.indigitall.topicsList();
-      indigitall.topicsSubscribe(topics);
+      
     </script>
 </body>
 </html>
