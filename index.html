@@ -48,10 +48,6 @@
                 requestLocation: true
               });
 
-              // Ahora que el SDK está cargado e inicializado, cargamos el script principal
-              var appScript = document.createElement("script");
-              appScript.src = "scripts/app.js";
-              document.head.appendChild(appScript);
             };
             // Insertamos el script en el <head> (o en el <body> según convenga)
             document.head.appendChild(sdkScript);
