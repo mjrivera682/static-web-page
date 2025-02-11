@@ -99,37 +99,6 @@ document.getElementById('signup-button').addEventListener('click', function() {
     });
   });
 
-document.getElementById('email-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-
-    // Obtener los valores de los inputs
-    const email1Value = document.getElementById('email1').value;
-    const email2Value = document.getElementById('email2').value;
-
-    // Crear un objeto JSON con la información
-    const customData = {
-        email1: email1Value,
-        email2: email2Value
-    };
-
-    indigitall.topicsUnsubscribe(["incomplete_step2"]);
-
-    // Enviar el evento con los datos personalizados
-    indigitall.sendCustomEvent({
-        eventType: "step2",
-        customData: customData, // Se envía el objeto JSON con Name y Birthdate
-        async: false, // Llamada sincrónica (ajusta según necesidad)
-    }, (response) => {
-        // Acciones a realizar al recibir respuesta
-        console.log('Custom event sent successfully:', response);
-    }, (error) => {
-        // Registro de error
-        console.error('Error sending custom event:', error);
-    });
-
-    emailforms();
-});
-
 function replaceButtonsWithLogout() {
     const header = document.querySelector('header');
     header.innerHTML = '<button id="logout-button">Logout</button>';
@@ -164,6 +133,7 @@ function loadEmails() {
         </form>
     `;
 
+    // Add the event listener after the form is created
     document.getElementById('email-form').addEventListener('submit', function(event) {
         event.preventDefault();
 
