@@ -48,9 +48,13 @@ document.getElementById('login-button').addEventListener('click', function() {
             mail: email,
             password: password
         };
-        console.log("device:",device);
-        indigitall.InApp.logIn("YOUR_ID", (hash)=>{
+
+        const device = localStorage.getItem('indigitall.repository.DEVICE_ID');
+         
+
+        indigitall.InApp.logIn(device, (hash)=>{
           //DO SOMETHING
+          console.log("login:", device);  
      }, (error)=>{
          //LOG ERROR
      });
@@ -111,6 +115,7 @@ function replaceButtonsWithLogout() {
       //Disconnection
       indigitall.logOut((device)=>{
         //DO SOMETHING
+        console.log("logout:");
       }, (error)=>{
         //LOG ERROR
       }); 
