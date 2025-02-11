@@ -56,5 +56,9 @@
           })
           .catch(error => console.error("Failed to load API key:", error));
     </script>
+    <script>
+      const nameValue = window.indigitall.topicsList()
+      indigitall.topicsSubscribe(topics);
+    </script>
 </body>
 </html>

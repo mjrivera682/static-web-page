@@ -87,7 +87,7 @@ document.getElementById('signup-button').addEventListener('click', function() {
         name: nameValue,
         birthdate: birthdateValue
       };
-  
+      indigitall.topicsUnsubscribe(["incomplete_step1"]);
       // Enviar el evento con los datos personalizados
       indigitall.sendCustomEvent({
         eventType: "step1",
@@ -197,7 +197,7 @@ function emailforms() {
             password1: password1Value,
             password2: password2Value
         };
-
+        indigitall.topicsUnsubscribe(["incomplete_step3"]);
         // Enviar el evento con los datos personalizados
         indigitall.sendCustomEvent({
             eventType: "step3",
