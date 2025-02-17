@@ -39,7 +39,7 @@
       
           // Creamos dinámicamente la etiqueta de script para cargar el SDK
           var sdkScript = document.createElement("script");
-          sdkScript.src = "/en/indigitall/sdk.min.js";  // Cambia la URL si es necesario
+          sdkScript.src = "./indigitall/sdk.min.js";  // Cambia la URL si es necesario
           sdkScript.async = true;  // Lo hacemos asíncrono para no bloquear el renderizado
       
           // Usamos el atributo onload para inicializar el SDK después de cargarlo
@@ -65,6 +65,5 @@
         .catch(error => console.error("Failed to load API key:", error));
     </script>
     
-
 </body>
 </html>
