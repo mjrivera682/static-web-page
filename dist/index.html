@@ -5,6 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Static Web Page</title>
     <link rel="stylesheet" href="styles/main.css">
+    
+    <!-- 🔹 Aquí se inyectará la API Key desde GitHub Actions -->
+    <!-- INJECT_API_KEY -->
+    
+    <script>
+      console.log("Inicio de script.");
+
+      // Esperamos que la API Key ya esté inyectada en window.INDIGITALL_API_KEY
+      if (window.INDIGITALL_API_KEY) {
+        console.log("API Key encontrada:", window.INDIGITALL_API_KEY);
+
+        // Creamos dinámicamente la etiqueta de script para cargar el SDK
+        var sdkScript = document.createElement("script");
+        sdkScript.src = "./indigitall/sdk.min.js";  // Asegúrate de que la ruta es correcta
+        sdkScript.async = true;
+
+        // Inicializar el SDK después de cargarlo
+        sdkScript.onload = function() {
+          console.log("SDK cargado. Inicializando...");
+          indigitall.init({
+            appKey: window.INDIGITALL_API_KEY
+          });
+        };
+
+        // Insertamos el script en el <head>
+        document.head.appendChild(sdkScript);
+      } else {
+        console.error("No se encontró la API Key en window.INDIGITALL_API_KEY");
+      }
+    </script>
+
 <script defer src="bundle.js"></script></head>
 <body>
     <header>
@@ -13,7 +44,6 @@
         <button id="login-button">Login</button>
     </header>
     <main id="main-content">
-        <p></p>
         <section id="content">
             <p>This is a static web page that connects to APIs.</p>
         </section>
@@ -21,40 +51,5 @@
     <footer>
         <p>&copy; 2025 Static Web Page</p>
     </footer>
-    <script>
-      console.log("Inicio de script.");
-    
-      // Primero, se carga la configuración desde config.json
-      fetch("./config.json")
-        .then(response => {
-          if (!response.ok) {
-            throw new Error("Config file not found!");
-          }
-          return response.json();
-        })
-        .then(config => {
-          // Asignamos la API key a una variable global
-          window.INDIGITALL_API_KEY = config.API_KEY;
-          console.log("Loaded API Key.");
-      
-          // Creamos dinámicamente la etiqueta de script para cargar el SDK
-          var sdkScript = document.createElement("script");
-          sdkScript.src = "./indigitall/sdk.min.js";  // Cambia la URL si es necesario
-          sdkScript.async = true;  // Lo hacemos asíncrono para no bloquear el renderizado
-      
-          // Usamos el atributo onload para inicializar el SDK después de cargarlo
-          sdkScript.onload = function() {
-            indigitall.init({
-              appKey: window.INDIGITALL_API_KEY,  // Usamos el appKey cargado desde config.json
-            });
-            
-          };
-      
-          // Insertamos el script en el <head> (o en el <body> según convenga)
-          document.head.appendChild(sdkScript);
-        })
-        .catch(error => console.error("Failed to load API key:", error));
-    </script>
-    
 </body>
 </html>

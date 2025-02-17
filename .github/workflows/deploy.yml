@@ -24,6 +24,9 @@ jobs:
       - name: Build the site
         run: npm run build
 
+      - name: Clean GitHub Pages branch before deploy
+        run: rm -rf gh-pages-check
+
       - name: Generate config.json with API Key
         run: |
           echo "{\"API_KEY\": \"${{ secrets.INDIGITALL_API_KEY }}\"}" > ./dist/config.json
@@ -53,10 +56,6 @@ jobs:
 
       - name: List dist/ folder
         run: ls -l ./dist
-        
-      - name: Clean GitHub Pages branch before deploy
-        run: rm -rf gh-pages-check
-
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
