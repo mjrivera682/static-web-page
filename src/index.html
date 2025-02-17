@@ -47,16 +47,7 @@
             indigitall.init({
               appKey: window.INDIGITALL_API_KEY,  // Usamos el appKey cargado desde config.json
             });
-            console.log("Indigitall SDK initialized.");
             
-            // Llamar a topicsList y topicsSubscribe después de la inicialización
-            var topicsCodes = ["incomplete_step1", "incomplete_step2", "incomplete_step3"];
-      
-            topicsCodes.forEach(topic => {
-              indigitall.topicsSubscribe([topic], (response) => {
-                console.log(`Subscribed to topic: ${topic}`, response);
-              });
-            });
           };
       
           // Insertamos el script en el <head> (o en el <body> según convenga)
