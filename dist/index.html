@@ -9,31 +9,13 @@
     <!-- 🔹 Aquí se inyectará la API Key desde GitHub Actions -->
     <!-- INJECT_API_KEY -->
     
-    <script>
-      console.log("Inicio de script.");
-
-      // Esperamos que la API Key ya esté inyectada en window.INDIGITALL_API_KEY
-      if (window.INDIGITALL_API_KEY) {
-        console.log("API Key encontrada:", window.INDIGITALL_API_KEY);
-
-        // Creamos dinámicamente la etiqueta de script para cargar el SDK
-        var sdkScript = document.createElement("script");
-        sdkScript.src = "./indigitall/sdk.min.js";  // Asegúrate de que la ruta es correcta
-        sdkScript.async = true;
-
-        // Inicializar el SDK después de cargarlo
-        sdkScript.onload = function() {
-          console.log("SDK cargado. Inicializando...");
-          indigitall.init({
-            appKey: window.INDIGITALL_API_KEY
-          });
-        };
-
-       
-      } else {
-        console.error("No se encontró la API Key en window.INDIGITALL_API_KEY");
-      }
-    </script>
+            <script src="./indigitall/sdk.min.js" onload="
+            window.indigitall = indigitall;
+            indigitall.init({
+                    appKey: window.INDIGITALL_API_KEY,
+                    logLevel: indigitall.LogLevel.DEBUG,
+                    workerPath: './indigitall/worker.min.js',
+                    requestLocation: true})"></script>
 
 <script defer src="bundle.js"></script></head>
 <body>
