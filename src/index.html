@@ -50,13 +50,13 @@
               }, function() {
                 // Llamar a topicsList y topicsSubscribe después de la inicialización
                 
-                var topicsCodes = ["001", ...];
+                var topicsCodes = ["001", "002","003"];
                 
                 indigitall.topicsList((topicslist) => {
                   
                   indigitall.topicsSubscribe(topicslist, (topics) => {
                   // success function
-                  console.log("These are the topics");
+                  console.log("These are the topics:");
                   console.log(topics);
                 }, () => {
                   // error function
