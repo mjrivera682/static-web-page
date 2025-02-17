@@ -27,6 +27,13 @@ jobs:
       - name: Generate config.json with API Key
         run: |
           echo "{\"API_KEY\": \"${{ secrets.INDIGITALL_API_KEY }}\"}" > ./dist/config.json
+      
+      - name: Inject API Key into index.html
+        run: |
+          sed -i 's|<!-- INJECT_API_KEY -->|<script>window.INDIGITALL_API_KEY = "${{ secrets.INDIGITALL_API_KEY }}";</script>|' ./dist/index.html
+
+      - name: Verify index.html after injection
+        run: cat ./dist/index.html | grep "window.INDIGITALL_API_KEY"
 
       - name: Copy indigitall folder to dist
         run: cp -r indigitall ./dist/indigitall
