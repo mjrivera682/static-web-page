@@ -49,9 +49,18 @@
                 requestLocation: true
               }, function() {
                 // Llamar a topicsList y topicsSubscribe después de la inicialización
-                indigitall.topicsList((topics) => {
+                
+                var topicsCodes = ["001", ...];
+                
+                indigitall.topicsList((topicslist) => {
+                  
+                  indigitall.topicsSubscribe(topicslist, (topics) => {
+                  // success function
+                  console.log("These are the topics");
                   console.log(topics);
-                  indigitall.topicsSubscribe(topics);
+                }, () => {
+                  // error function
+                });
                 });
               });
             };
