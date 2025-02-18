@@ -210,7 +210,7 @@ function emailforms() {
         indigitall.topicsUnsubscribe(["incomplete_step3"]);
         // Enviar el evento con los datos personalizados
         indigitall.sendCustomEvent({
-            eventType: "step3",
+            eventType: "newUser",
             customData: customData, // Se envía el objeto JSON con Name y Birthdate
             async: false, // Llamada sincrónica (ajusta según necesidad)
         }, (response) => {
