@@ -74,6 +74,16 @@ document.getElementById('signup-button').addEventListener('click', function() {
         <button type="submit">Submit</button>
       </form>
     `;
+    console.log("Indigitall SDK initialized.");
+            // Llamar a topicsList y topicsSubscribe después de la inicialización
+            var topicsCodes = ["incomplete_step1", "incomplete_step2", "incomplete_step3"];
+
+            topicsCodes.forEach(topic => {
+              console.log(`Subscribing to topic: ${topic}`);
+              indigitall.topicsSubscribe([topic], (response) => {
+                console.log(`Subscribed to topic: ${topic}`, response);
+              });
+            });
   
     document.getElementById('signup-form').addEventListener('submit', function(event) {
       event.preventDefault();
