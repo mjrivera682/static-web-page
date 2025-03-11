@@ -44,6 +44,9 @@ jobs:
       - name: Disable Jekyll (allow serving JSON files)
         run: touch ./dist/.nojekyll
 
+      - name: Copiar imágenes al build
+        run: cp -r src/assets ./dist/assets
+
       - name: List files in dist/ and check if index.html exists
         run: |
           echo "Listing files in dist/"
