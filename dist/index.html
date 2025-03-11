@@ -1,36 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Static Web Page</title>
+    <title>Smart TV - Vive la Mejor Experiencia</title>
     <link rel="stylesheet" href="styles/main.css">
     
     <!-- 🔹 Aquí se inyectará la API Key desde GitHub Actions -->
     <!-- INJECT_API_KEY -->
     
-            <script src="./indigitall/sdk.min.js" onload="
-            window.indigitall = indigitall;
-            indigitall.init({
-                    appKey: window.INDIGITALL_API_KEY,
-                    logLevel: indigitall.LogLevel.DEBUG,
-                    workerPath: './indigitall/worker.min.js',
-                    requestLocation: true})"></script>
-
+    <script src="./indigitall/sdk.min.js" onload="
+    window.indigitall = indigitall;
+    indigitall.init({
+        appKey: window.INDIGITALL_API_KEY,
+        logLevel: indigitall.LogLevel.DEBUG,
+        workerPath: './indigitall/worker.min.js',
+        requestLocation: true})"></script>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #content {
+            max-width: 600px;
+            margin: auto;
+        }
+        img {
+            width: 600px;
+            height: 400px;
+            object-fit: cover;
+            margin: 20px 0;
+        }
+    </style>
 <script defer src="bundle.js"></script></head>
 <body>
     <header>
-        <h1>Welcome to the Static Web Page</h1>
-        <button id="signup-button">Sign Up</button>
-        <button id="login-button">Login</button>
+        <h1>Descubre el Futuro del Entretenimiento</h1>
+        <button id="signup-button">¡Comprar Ahora!</button>
+        <button id="login-button">Más Información</button>
     </header>
     <main id="main-content">
         <section id="content">
-            <p>This is a static web page that connects to APIs.</p>
+            <h2>Smart TV 75" 4K UHD QLED</h2>
+            <img src="assets/TV.jpg" alt="Imagen del Smart TV">
+            <p>Disfruta de imágenes impresionantes con <strong>colores vibrantes</strong>, <strong>sonido envolvente</strong> y la última tecnología en <strong>Smart TV con inteligencia artificial</strong>.</p>
+            <ul>
+                <li>📺 Pantalla de 75" 4K UHD QLED</li>
+                <li>🎶 Sonido Dolby Atmos envolvente</li>
+                <li>🤖 Funciones inteligentes con IA</li>
+                <li>⚡ Streaming ultra rápido</li>
+            </ul>
+            <h3>🔥 Oferta Especial: <del>$6.999.900</del> ➡️ <strong>$5.499.900</strong></h3>
+            <p>¡No dejes pasar esta oportunidad y lleva la mejor tecnología a tu hogar!</p>
         </section>
+
+        El sector retail recurre con frecuencia a las comunicaciones vía SMS para establecer contacto con los clientes. Es un modo muy efectivo de impactar en ellos y, además, de inmediato. En indigitall te ofrecemos algunas claves para que tu empresa pueda disfrutar de los beneficios de una opción que goza actualmente de gran aceptación.
+
+Estos son los principales usos que el sector retail da a los SMS
+
+Los negocios pertenecientes al sector retail han sabido cómo sacar partido a los mensajes que se envían a los teléfonos móviles. Desde hace ya algunos años, los casos de uso del SMS son tan diversos como exitosos. En este artículo recopilamos algunos de los principales.
     </main>
     <footer>
-        <p>&copy; 2025 Static Web Page</p>
+        <p>&copy; 2025 Smart TV Innovations</p>
     </footer>
 </body>
 </html>
