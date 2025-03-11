@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Static Web Page</title>
+    <link rel="stylesheet" href="styles/main.css">
+    
+    <!-- 🔹 Aquí se inyectará la API Key desde GitHub Actions -->
+    <!-- INJECT_API_KEY -->
+    
+            <script src="./indigitall/sdk.min.js" onload="
+            window.indigitall = indigitall;
+            indigitall.init({
+                    appKey: window.INDIGITALL_API_KEY,
+                    logLevel: indigitall.LogLevel.DEBUG,
+                    workerPath: './indigitall/worker.min.js',
+                    requestLocation: true})"></script>
+
+</head>
+<body>
+    <header>
+        <h1>Welcome to the Static Web Page</h1>
+        <button id="signup-button">Sign Up</button>
+        <button id="login-button">Login</button>
+    </header>
+    <main id="main-content">
+        <section id="content">
+            <p>This is a static web page that connects to APIs.</p>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 Static Web Page</p>
+    </footer>
+</body>
+</html>

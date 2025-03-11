@@ -1,36 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Static Web Page</title>
+    <title>Smart TV - Vive la Mejor Experiencia</title>
     <link rel="stylesheet" href="styles/main.css">
     
     <!-- 🔹 Aquí se inyectará la API Key desde GitHub Actions -->
     <!-- INJECT_API_KEY -->
     
-            <script src="./indigitall/sdk.min.js" onload="
-            window.indigitall = indigitall;
-            indigitall.init({
-                    appKey: window.INDIGITALL_API_KEY,
-                    logLevel: indigitall.LogLevel.DEBUG,
-                    workerPath: './indigitall/worker.min.js',
-                    requestLocation: true})"></script>
-
+    <script src="./indigitall/sdk.min.js" onload="
+    window.indigitall = indigitall;
+    indigitall.init({
+        appKey: window.INDIGITALL_API_KEY,
+        logLevel: indigitall.LogLevel.DEBUG,
+        workerPath: './indigitall/worker.min.js',
+        requestLocation: true})"></script>
 </head>
 <body>
     <header>
-        <h1>Welcome to the Static Web Page</h1>
-        <button id="signup-button">Sign Up</button>
-        <button id="login-button">Login</button>
+        <h1>Descubre el Futuro del Entretenimiento</h1>
+        <button id="signup-button">¡Comprar Ahora!</button>
+        <button id="login-button">Más Información</button>
     </header>
     <main id="main-content">
         <section id="content">
-            <p>This is a static web page that connects to APIs.</p>
+            <h2>Smart TV 75" 4K UHD QLED</h2>
+            <p>Disfruta de imágenes impresionantes con **colores vibrantes**, **sonido envolvente** y la última tecnología en **Smart TV con inteligencia artificial**.</p>
+            <ul>
+                <li>📺 Pantalla de 75" 4K UHD QLED</li>
+                <li>🎶 Sonido Dolby Atmos envolvente</li>
+                <li>🤖 Funciones inteligentes con IA</li>
+                <li>⚡ Streaming ultra rápido</li>
+            </ul>
+            <h3>🔥 Oferta Especial: **Antes $6.999.900** ➡️ **Ahora $5.499.900**</h3>
+            <p>¡No dejes pasar esta oportunidad y lleva la mejor tecnología a tu hogar!</p>
         </section>
     </main>
     <footer>
-        <p>&copy; 2025 Static Web Page</p>
+        <p>&copy; 2025 Smart TV Innovations</p>
     </footer>
 </body>
 </html>
