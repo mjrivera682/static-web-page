@@ -86,7 +86,10 @@ test('config: password fields are rejected', () => {
 test('config: live mode needs a real appKey', () => {
   const c = structuredClone(base);
   c.mode = 'live';
+  c.indigitall.appKey = 'REPLACE_WITH_DEMO_APP_KEY';
   assert.ok(validateConfig(c).some((p) => p.includes('real appKey')));
+  c.indigitall.appKey = '11111111-2222-3333-4444-555555555555';
+  assert.deepEqual(validateConfig(c), []);
 });
 
 test('config: identity strategy must match a required field', () => {

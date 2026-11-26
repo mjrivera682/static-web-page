@@ -3,10 +3,10 @@
   "slug": "cdp-lead-capture",
   "title": "Solicita información — Demo CDP Lead Capture",
   "mode": "dry-run",
-  "_provisional": "Pendiente de indigitall: appKey, urlDeviceApi y event.name. Identificador = email (link + campo email). lead_source es el flag que distingue estos leads de demo de otros leads.",
+  "_provisional": "App Key definitivo configurado. mode sigue en dry-run hasta confirmar en indigitall: dominio autorizado, sin filtro de IP para el SDK web y journey de lead_submitted con filtro lead_source = demo_cdp_lead_capture. Para pasar a real: \"mode\": \"live\". urlDeviceApi null = endpoint por defecto https://device-api.indigitall.com.",
   "indigitall": {
     "sdkVersion": "4.18.1",
-    "appKey": "REPLACE_WITH_DEMO_APP_KEY",
+    "appKey": "5894aaa8-3972-4b97-9747-b6175946dcdd",
     "urlDeviceApi": null,
     "pushMode": "disabled",
     "logLevel": "ERROR"
