@@ -99,6 +99,15 @@ test('config: live mode needs Web Push enabled (SDK 4.18.1 link requires it)', (
   assert.ok(validateConfig(c).some((p) => p.includes('pushMode "enabled"')));
 });
 
+test('config: profile read-back cannot be re-enabled', () => {
+  const c = structuredClone(base);
+  assert.equal(c.flow.verifyProfile, 'off');
+  for (const v of ['lenient', 'strict']) {
+    c.flow.verifyProfile = v;
+    assert.ok(validateConfig(c).some((p) => p.includes('verifyProfile')));
+  }
+});
+
 test('config: identity strategy must match a required field', () => {
   const c = structuredClone(base);
   c.identity.strategy = 'phone';

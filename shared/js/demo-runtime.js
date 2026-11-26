@@ -23,7 +23,6 @@ const STEP_LABEL = {
   device: 'Primero activa las notificaciones (paso 1).',
   identify: 'No pudimos identificar tu perfil.',
   setFields: 'No pudimos guardar tus datos.',
-  verify: 'No pudimos confirmar que tus datos se guardaron.',
   sendEvent: 'Tus datos se guardaron, pero no pudimos registrar la solicitud.',
   prepare: 'No pudimos preparar la solicitud.',
 };
@@ -318,8 +317,8 @@ function createPanel() {
   const title = h('h2', {}, 'Diagnóstico');
   const stateEl = h('dl', { class: 'diag-state' });
   const legend = h('p', { class: 'diag-legend' },
-    'Etapas: SDK cargado → SDK inicializado → dispositivo registrado → usuario identificado → evento aceptado (ACCEPTED_BY_API). '
-    + 'La ejecución del Customer Journey solo se confirma en la consola de indigitall.');
+    'Etapas: SDK cargado → SDK inicializado → dispositivo registrado → usuario identificado → escritura CDP aceptada → evento aceptado (ACCEPTED_BY_API). '
+    + 'No se lee el perfil de vuelta: los atributos persistidos y la ejecución del Customer Journey se comprueban en la consola de indigitall.');
   const actions = h('div', { class: 'diag-actions' });
   const btnSession = h('button', { type: 'button', class: 'secondary' }, '1 · Nueva sesión de cliente');
   const btnIntegration = h('button', { type: 'button', class: 'secondary' }, '2 · Reiniciar integración SDK');
@@ -386,8 +385,7 @@ function createPanel() {
         'Canal de vinculación': state.linkChannel ?? '—',
         '4 · Identificación': state.identity,
         'External ID': state.externalId ? maskValue('externalId', state.externalId) : '—',
-        'Persistencia CDP': state.cdp ?? '—',
-        'Verificación del perfil': state.verification ?? '—',
+        'Escritura CDP (assignOrUpdateValueToCustomerFields)': state.cdp ?? '—',
         '5 · Evento': state.event ?? '—',
         'Última confirmación': state.lastConfirmation ?? '—',
       };

@@ -1,15 +1,19 @@
 // Lead capture sequence. Each step waits for the SDK's success callback; any error
 // stops the flow, so the journey event is never sent without a confirmed profile.
 //
-//   SDK operational → device registered → identify (link, Channel.PUSH)
-//   → set fields → verify → send event
+//   SDK initialization → Web Push opt-in → device registration
+//   → identify (link, Channel.PUSH) → CDP attribute update → custom event
+//
+// There is no read-back of the profile: the Web SDK has no supported, frontend-only way
+// to verify persisted attributes for this use case, and the check would block the
+// commercial flow. Persisted attributes are checked manually in the indigitall console.
 
 import {
   validateLead, buildExternalId, buildCustomerFields, buildEventData,
 } from './normalize.js';
-import { SdkError, extractCustomerFields } from './indigitall-client.js';
+import { SdkError } from './indigitall-client.js';
 
-export const STEPS = ['device', 'identify', 'setFields', 'verify', 'sendEvent'];
+export const STEPS = ['device', 'identify', 'setFields', 'sendEvent'];
 
 async function sha256Hex(text) {
   const data = new TextEncoder().encode(text);
@@ -47,16 +51,6 @@ export function fingerprint(values) {
   return JSON.stringify(Object.keys(values).sort().map((k) => [k, values[k]]));
 }
 
-/** Compare sent fields with what the platform returned. Values compared as strings. */
-export function compareFields(sent, received) {
-  const mismatches = [];
-  for (const [k, v] of Object.entries(sent)) {
-    if (!(k in received)) mismatches.push({ field: k, reason: 'missing' });
-    else if (String(received[k]) !== String(v)) mismatches.push({ field: k, reason: 'different' });
-  }
-  return mismatches;
-}
-
 /**
  * @param {object} p
  * @param {object} p.config      demo config
@@ -83,7 +77,6 @@ export async function runLeadFlow({
   const submissionId = guard.acquire(fingerprint(values));
   if (!submissionId) return { status: 'blocked', cooldown: guard.cooldownRemaining() };
 
-  const flow = config.flow ?? {};
   const event = config.event;
   try {
     const externalId = buildExternalId(config.identity, values);
@@ -129,33 +122,13 @@ export async function runLeadFlow({
     // 4. Customer fields.
     try {
       await run(diag, 'setFields', customerFields, () => client.setFields(customerFields));
-      diag.set({ cdp: simulated ? 'ok (simulated)' : 'ok' });
+      diag.set({ cdp: simulated ? 'write accepted (simulated)' : 'write accepted by the SDK (no read-back)' });
     } catch (err) {
       diag.set({ cdp: 'error' });
       throw err;
     }
 
-    // 5. Profile verification.
-    let verification = 'skipped';
-    const verifyMode = flow.verifyProfile ?? 'lenient';
-    if (verifyMode !== 'off') {
-      diag.set({ verification: 'running' });
-      verification = await run(diag, 'verify', null, async () => {
-        const received = extractCustomerFields(await client.getFields());
-        if (!received) {
-          if (verifyMode === 'strict') throw new SdkError('PROFILE_UNVERIFIABLE', 'Unrecognized getCustomerInformation response');
-          return 'unrecognized-response';
-        }
-        const mismatches = compareFields(customerFields, received);
-        if (mismatches.length) {
-          throw Object.assign(new SdkError('PROFILE_MISMATCH', `Fields not persisted: ${mismatches.map((m) => m.field).join(', ')}`), { mismatches });
-        }
-        return 'verified';
-      }).catch((err) => { diag.set({ verification: 'error' }); throw err; });
-    }
-    diag.set({ verification });
-
-    // 6. Journey event.
+    // 5. Journey event, only after the SDK accepted the attribute write.
     try {
       await run(diag, 'sendEvent', { eventCode: event.name, data: eventData, eventId: submissionId, eventAt },
         () => client.sendEvent(event.name, submissionId, eventAt, eventData));
@@ -173,7 +146,7 @@ export async function runLeadFlow({
       diag.set({ lastConfirmation: 'ACCEPTED_BY_API' });
       diag.info('Event accepted by the API. Journey execution can only be confirmed in the indigitall console.');
     }
-    return { status: 'sent', submissionId, verification };
+    return { status: 'sent', submissionId };
   } catch (err) {
     guard.release();
     throw err instanceof FlowError ? err : new FlowError('prepare', err);

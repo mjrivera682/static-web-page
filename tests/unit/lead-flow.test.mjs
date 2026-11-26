@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createSdkSimulator } from '../../shared/js/sdk-simulator.js';
-import { createIndigitallClient, extractCustomerFields } from '../../shared/js/indigitall-client.js';
+import { createIndigitallClient } from '../../shared/js/indigitall-client.js';
 import { createGuard } from '../../shared/js/guard.js';
 import { createDiagnostics } from '../../shared/js/diagnostics.js';
 import { runLeadFlow, FlowError, createIdentityStore } from '../../shared/js/lead-flow.js';
@@ -104,12 +104,23 @@ test('regression: push disabled reproduces DISABLED_CHANNEL on link', async () =
 
 // --- Lead flow -----------------------------------------------------------------
 
-test('happy path: init → link → fields → verify → event', async () => {
-  const { sim, run } = await setup();
+test('happy path: init → link → fields → event, with no profile read-back', async () => {
+  const { sim, run, diag } = await setup();
   const r = await run();
   assert.equal(r.status, 'sent');
-  assert.equal(r.verification, 'verified');
-  assert.deepEqual(methods(sim), ['init', 'link', 'assignOrUpdateValueToCustomerFields', 'getCustomerInformation', 'sendCustomerCustomEvent']);
+  assert.deepEqual(methods(sim), ['init', 'link', 'assignOrUpdateValueToCustomerFields', 'sendCustomerCustomEvent']);
+  assert.ok(!methods(sim).includes('getCustomerInformation'));
+  assert.equal(diag.state.cdp, 'write accepted by the SDK (no read-back)');
+});
+
+test('the event is sent only after the attribute write callback succeeded', async () => {
+  const { sim, run } = await setup();
+  let writeAcked = false;
+  const write = sim.assignOrUpdateValueToCustomerFields;
+  sim.assignOrUpdateValueToCustomerFields = (f, ok, err) => write(f, (r) => { writeAcked = true; ok(r); }, err);
+  const send = sim.sendCustomerCustomEvent;
+  sim.sendCustomerCustomEvent = (...a) => { assert.ok(writeAcked, 'event before write ack'); return send(...a); };
+  assert.equal((await run()).status, 'sent');
 });
 
 test('link uses the email as External ID, without prefix, on Channel.PUSH', async () => {
@@ -133,7 +144,7 @@ test('CDP contract: name, email, phone, lead_source; email equals the External I
 test('event uses the SDK 4.18.1 order: code, data, eventId, eventAt', async () => {
   const { sim, run } = await setup();
   const r = await run();
-  const [eventCode, data, eventId, eventAt] = sim.calls[4].args;
+  const [eventCode, data, eventId, eventAt] = sim.calls[3].args;
   assert.equal(eventCode, 'lead_submitted');
   assert.deepEqual(data, { name: 'Ana', phone: '+573001234567', product: 'Plan Hogar', lead_source: 'demo_cdp_lead_capture' });
   assert.equal(eventId, r.submissionId);
@@ -151,7 +162,7 @@ test('dry-run is reported as SIMULATED, never as accepted by the API', async () 
   assert.equal(live.diag.state.event, 'accepted');
 });
 
-for (const failing of ['link', 'assignOrUpdateValueToCustomerFields', 'getCustomerInformation']) {
+for (const failing of ['link', 'assignOrUpdateValueToCustomerFields']) {
   test(`${failing} fails → no event, error surfaced`, async () => {
     const { sim, run } = await setup({ fail: { [failing]: { errorMessage: 'x' } } });
     await assert.rejects(run(), FlowError);
@@ -174,29 +185,6 @@ test('callback that never arrives → TIMEOUT, no event', async () => {
   assert.ok(!methods(sim).includes('sendCustomerCustomEvent'));
 });
 
-test('profile mismatch → no event', async () => {
-  const { sim, client, guard, diag } = await setup();
-  sim.getCustomerInformation = (ok) => setTimeout(() => ok({ fields: { email: 'other@x.com' } }), 1);
-  await assert.rejects(
-    runLeadFlow({ config, rawValues: RAW, client, guard, diag, now: FIXED_NOW }),
-    (e) => e.step === 'verify' && e.code === 'PROFILE_MISMATCH',
-  );
-  assert.ok(!methods(sim).includes('sendCustomerCustomEvent'));
-});
-
-test('unrecognized verification response: lenient continues, strict stops', async () => {
-  const odd = (ok) => setTimeout(() => ok('not-json'), 1);
-  const lenient = await setup();
-  lenient.sim.getCustomerInformation = odd;
-  assert.equal((await lenient.run()).verification, 'unrecognized-response');
-
-  const strictCfg = structuredClone(config);
-  strictCfg.flow.verifyProfile = 'strict';
-  const strict = await setup({}, strictCfg);
-  strict.sim.getCustomerInformation = odd;
-  await assert.rejects(strict.run(), (e) => e.code === 'PROFILE_UNVERIFIABLE');
-});
-
 // --- Identity on the same device -----------------------------------------------
 
 test('existing contact / reload: same email again → link again, no unlink', async () => {
@@ -211,9 +199,9 @@ test('identity change on the same device: unlink(PUSH) before linking the new em
   const { sim, run } = await setup();
   await run();
   await run({ ...RAW, email: 'otra@example.com' });
-  const seq = methods(sim).slice(5);
+  const seq = methods(sim).slice(4);
   assert.deepEqual(seq.slice(0, 2), ['unlink', 'link']);
-  assert.deepEqual(sim.calls[5].args, ['push']);
+  assert.deepEqual(sim.calls[4].args, ['push']);
   assert.equal(sim.db.externalId, 'otra@example.com');
 });
 
@@ -246,12 +234,4 @@ test('double submit → a single sequence', async () => {
   const [a, b] = await Promise.all([run(), run()]);
   assert.deepEqual([a.status, b.status].sort(), ['blocked', 'sent']);
   assert.equal(methods(sim).filter((m) => m === 'sendCustomerCustomEvent').length, 1);
-});
-
-test('extractCustomerFields accepts the shapes we can recognize', () => {
-  assert.deepEqual(extractCustomerFields({ fields: { a: 1 } }), { a: 1 });
-  assert.deepEqual(extractCustomerFields([{ name: 'a', value: 1 }]), { a: 1 });
-  assert.deepEqual(extractCustomerFields({ data: { fields: [{ fieldName: 'a', value: 1 }] } }), { a: 1 });
-  assert.deepEqual(extractCustomerFields('{"a":1}'), { a: 1 });
-  assert.equal(extractCustomerFields('not-json'), null);
 });

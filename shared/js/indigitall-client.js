@@ -169,11 +169,6 @@ export function createIndigitallClient({
       return call('assignOrUpdateValueToCustomerFields', [{ ...fields }]);
     },
 
-    getFields() {
-      requireDevice();
-      return call('getCustomerInformation', []);
-    },
-
     getCustomer() {
       requireDevice();
       return call('getCustomer', []);
@@ -191,27 +186,4 @@ export function createIndigitallClient({
       return call('unlink', [channel()]);
     },
   };
-}
-
-/**
- * getCustomerInformation's response shape is not documented. Accept the shapes we can
- * recognize and return a plain {field: value} object, or null when unrecognized.
- */
-export function extractCustomerFields(response) {
-  if (!response) return null;
-  let r = response;
-  if (typeof r === 'string') { try { r = JSON.parse(r); } catch { return null; } }
-  if (r.data && typeof r.data === 'object') r = r.data;
-  if (r.fields && typeof r.fields === 'object' && !Array.isArray(r.fields)) return { ...r.fields };
-  const list = Array.isArray(r) ? r : Array.isArray(r.fields) ? r.fields : null;
-  if (list) {
-    const out = {};
-    for (const item of list) {
-      const name = item?.name ?? item?.fieldName ?? item?.key;
-      if (name !== undefined) out[name] = item.value;
-    }
-    return Object.keys(out).length ? out : null;
-  }
-  if (typeof r === 'object' && !Array.isArray(r)) return { ...r };
-  return null;
 }

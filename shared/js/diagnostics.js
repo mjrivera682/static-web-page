@@ -73,7 +73,7 @@ export function createDiagnostics({ enabled, now = () => performance.now(), onEn
     init: 'idle', permission: null, swUrl: null, sw: null,
     device: 'not registered', deviceId: null,
     linkChannel: null, identity: 'anonymous', externalId: null,
-    cdp: null, verification: null, event: null, lastConfirmation: null,
+    cdp: null, event: null, lastConfirmation: null,
   };
 
   function push(entry) {

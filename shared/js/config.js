@@ -47,8 +47,9 @@ export function validateConfig(config) {
   need(typeof config.event?.name === 'string' && config.event.name.length > 0, 'event.name is required');
   for (const id of config.event?.data ?? []) need(ids.has(id), `event.data references unknown field ${id}`);
 
-  const verify = config.flow?.verifyProfile ?? 'lenient';
-  need(['off', 'lenient', 'strict'].includes(verify), 'flow.verifyProfile must be off, lenient or strict');
+  // No profile read-back in the flow (frontend-only SDK integration): only "off" is valid.
+  const verify = config.flow?.verifyProfile ?? 'off';
+  need(verify === 'off', 'flow.verifyProfile must be "off": the flow does not read the profile back');
 
   return problems;
 }

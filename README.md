@@ -30,11 +30,12 @@ romper URLs publicadas: no cargan el SDK. Ya no hay webpack, npm ni `node_module
 3. `indigitall.link(email, indigitall.Channel.PUSH)`: el SDK 4.18.1 rechaza `Channel.NONE`
    (`DISABLED_CHANNEL`) y exige permiso de notificaciones concedido.
 4. `indigitall.assignOrUpdateValueToCustomerFields({ name, email, phone, lead_source })`
-5. `indigitall.getCustomerInformation()`: verificación antes del evento (`flow.verifyProfile`).
-6. `indigitall.sendCustomerCustomEvent(eventCode, data, eventId, eventAt, ok, err)`:
+5. `indigitall.sendCustomerCustomEvent(eventCode, data, eventId, eventAt, ok, err)`:
    orden real del SDK 4.18.1 (la documentación muestra otro).
 
 Cada paso espera su callback de éxito. Si uno falla, el evento no se envía y no se muestra éxito.
+No hay lectura de verificación del perfil (`flow.verifyProfile: "off"`): los atributos persistidos
+se comprueban en la consola de indigitall. No se usa ninguna API privada ni Server Key.
 Si las notificaciones están bloqueadas, la página lo indica y no permite enviar: sin dispositivo
 registrado el SDK no puede identificar al cliente.
 
