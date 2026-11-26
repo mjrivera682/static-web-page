@@ -36,7 +36,7 @@ const PHONE_RE = /^\+?\d[\d\s\-()]{6,}$/;
 const SAFE_KEYS = new Set([
   'product', 'producto_de_interes', 'Country_code', 'Origen', 'contact_consent', 'submitted_at', 'eventCode', 'eventAt',
   'eventId', 'channel', 'pushMode', 'version', 'status', 'code', 'permission', 'workerPath', 'scope', 'push',
-  'location',
+  'location', 'steps', 'declared', 'loaded',
   // SDK error fields: needed to diagnose failures.
   'errorMessage', 'errorCode', 'statusCode', 'message',
 ]);
