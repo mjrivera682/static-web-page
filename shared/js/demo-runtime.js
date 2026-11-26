@@ -14,6 +14,9 @@ import { createDiagnostics, maskValue, maskId } from './diagnostics.js';
 import { renderForm } from './form-renderer.js';
 import { runLeadFlow, createIdentityStore } from './lead-flow.js';
 import { PUSH_STATES, browserPermissions, simulatedPermissions, renderOptIn } from './push-optin.js';
+import { createInWebClient, INWEB_STATES } from './inweb-client.js';
+import { adaptInWebSubmission, describeStructure } from './inweb-form-adapter.js';
+import { ERROR_TEXT } from './form-renderer.js';
 import {
   resetCustomerSession, resetIntegration, resetIfAppKeyChanged, succeeded, permissionResetInstructions,
   SDK_LOCAL_PREFIX, SDK_SESSION_PREFIX, SDK_IDB_NAME,
@@ -126,7 +129,22 @@ async function main() {
   const optInHost = h('div');
   const formHost = h('div');
   const status = h('div', { class: 'status', role: 'status', 'aria-live': 'polite' });
-  root.append(optInHost, formHost, status);
+  // In-Web modality (optional): same opt-in, same SDK instance, same Lead Flow.
+  const inwebCfg = config.inweb?.enabled ? { ...config.inweb } : null;
+  if (inwebCfg && debug && params.get('inweb-code')) {
+    const code = params.get('inweb-code');
+    if (/^[A-Za-z0-9_.-]+$/.test(code)) inwebCfg.inAppCode = code; // debug-only override
+  }
+  let inwebUi = null;
+  if (inwebCfg) {
+    const tabs = renderTabs(root, params.get('tab') === 'inweb' ? 'inweb' : 'sdk');
+    root.prepend(optInHost);
+    tabs.sdkPanel.append(formHost, status);
+    inwebUi = renderInWebPanel(tabs.inwebPanel, inwebCfg);
+    inwebUi.tabs = tabs;
+  } else {
+    root.append(optInHost, formHost, status);
+  }
   const ui = renderForm(document, formHost, config);
   ui.setLocked(true);
 
@@ -142,6 +160,7 @@ async function main() {
     const sim = createSdkSimulator({
       permission: initial,
       fail: failMethod ? { [failMethod]: { errorMessage: 'simulated failure' } } : {},
+      inweb: { outcome: params.get('simulate-inweb') ?? 'render' }, // render | notfound | error
     });
     getSdk = () => sim;
     permissions = simulatedPermissions({ initial, answer, sdk: sim });
@@ -262,6 +281,7 @@ async function main() {
       });
       setPush(PUSH_STATES.REGISTERED);
       ui.setLocked(false);
+      if (inwebUi?.wanted) loadInWeb();
     } catch (err) {
       const denied = err.code === 'PUSH_PERMISSION_DENIED';
       diag.set({ init: denied ? 'stopped (permission denied)' : 'error', device: denied ? 'not registered (permission denied)' : `error (${err.code})` });
@@ -290,6 +310,91 @@ async function main() {
     if (current === 'granted') await startRegistration();  // returning visitor: no prompt
     else setPush(current === 'denied' ? PUSH_STATES.DENIED : PUSH_STATES.DEFAULT);
     if (!dryRun) diag.set(await describeServiceWorker(workerPath));
+  }
+
+  // --- In-Web -----------------------------------------------------------------
+  let loadInWeb = () => {};
+  if (inwebUi) {
+    const inweb = createInWebClient({
+      getSdk, appKey: ind.appKey, inweb: inwebCfg,
+      onEvent: (type, detail) => onInWebEvent(type, detail),
+    });
+    diag.set({
+      inwebLib: inweb.isAvailable() ? `indigitall.InApp ${inweb.version() ?? ''} (sdk.min.js)` : 'not available',
+      inweb: inweb.state,
+      inwebConfig: `${inwebCfg.inAppCode ?? '(sin código)'} · #${inwebCfg.viewId} ${inwebCfg.width}x${inwebCfg.height}`
+        + ` · ${inwebCfg.urlInAppApi ?? 'EU1 por defecto (device-api v2)'}`,
+    });
+
+    loadInWeb = () => {
+      inwebUi.wanted = true;
+      if (client.pushEnabled && !client.deviceId) {
+        // Without a registered device the In-App module would create a device of its own,
+        // and Web Push registration would then create a second one.
+        inweb.waitForDevice();
+        inwebUi.setState(INWEB_STATES.WAITING_DEVICE);
+        return;
+      }
+      if (inweb.show()) diag.info('In-Web campaign requested', { code: inwebCfg.inAppCode });
+    };
+    inwebUi.onRetry(loadInWeb);
+    inwebUi.tabs.onSelect((tab) => { if (tab === 'inweb' && inwebCfg.autoLoad !== false) loadInWeb(); });
+    if (inwebUi.tabs.current === 'inweb' && inwebCfg.autoLoad !== false) loadInWeb();
+
+    let inwebBusy = false;
+    async function onInWebEvent(type, detail) {
+      if (type === 'state') {
+        inwebUi.setState(detail.state);
+        diag.set({ inweb: detail.code ? `${detail.state} (${detail.code})` : detail.state });
+        if (detail.error || detail.code) diag.info(`In-Web ${detail.state}`, { code: detail.code, error: detail.error });
+        return;
+      }
+      if (type === 'didClicked') { diag.info('In-Web didClicked (no lead)', { action: detail.action?.type ?? null }); return; }
+      if (type === 'didFormError') {
+        diag.set({ inwebForm: 'validation error (In-Web)' });
+        diag.info('In-Web didFormError', { errors: (detail.errorList ?? []).map((e) => e?.errorMessage ?? e?.message ?? String(e)) });
+        inwebUi.message('Revisa los campos del formulario.', 'error');
+        return;
+      }
+      if (type !== 'didFormSubmit') { diag.info(`In-Web ${type}`, { code: type }); return; }
+
+      // Only a submitted form starts the Lead Flow.
+      diag.set({ inwebForm: 'received' });
+      // Keys (console input ids) and value types only, no values: logged unmasked on purpose.
+      diag.info(`In-Web didFormSubmit structure: ${JSON.stringify(describeStructure(detail.data))}`);
+      if (inwebBusy) { diag.info('In-Web submit ignored: one already running'); return; }
+      inwebBusy = true;
+      const phoneField = config.fields.find((f) => f.type === 'tel');
+      const { rawValues, missing, unmapped } = adaptInWebSubmission(detail.data, inwebCfg, phoneField);
+      if (missing.length || unmapped.length) diag.info('In-Web field mapping', { missing: missing.join(', '), unmapped: unmapped.join(', ') });
+      inwebUi.message('Enviando…', 'info');
+      try {
+        const result = await runLeadFlow({
+          config, rawValues, honeypot: '', client, guard, diag, identityStore, simulated: dryRun,
+          staticAttributes: inwebCfg.staticAttributes,
+        });
+        if (result.status === 'invalid') {
+          diag.set({ inwebForm: 'validation error (demo)' });
+          inwebUi.message(describeInvalid(result.errors, config, rawValues.phone_country), 'error');
+          return;
+        }
+        if (result.status === 'blocked') {
+          inwebUi.message(result.cooldown
+            ? `Ya recibimos una solicitud desde este navegador. Puedes enviar otra en ${result.cooldown} s.`
+            : 'Ya estamos enviando tu solicitud.', 'info');
+          return;
+        }
+        diag.set({ inwebForm: 'lead accepted' });
+        inweb.markSubmitted();
+        inwebUi.success(config.successMessage ?? '¡Gracias! Recibimos tu solicitud.');
+      } catch (err) {
+        diag.set({ inwebForm: `error (${err.step} · ${err.code})` });
+        inwebUi.message(err.step === 'device' ? STEP_LABEL.device
+          : `${STEP_LABEL[err.step] ?? 'Algo salió mal.'} Inténtalo de nuevo en unos segundos.${debug ? ` [${err.step} · ${err.code}]` : ''}`, 'error');
+      } finally {
+        inwebBusy = false;
+      }
+    }
   }
 
   // --- Form -------------------------------------------------------------------
@@ -325,6 +430,89 @@ async function main() {
       if (client.pushEnabled && !client.deviceId) ui.setLocked(true);
     }
   });
+}
+
+/** Validation messages for a lead coming from In-Web (its fields live in the console). */
+function describeInvalid(errors, config, country) {
+  const labels = Object.fromEntries(config.fields.map((f) => [f.id, f.label]));
+  const parts = Object.entries(errors).map(([id, code]) => {
+    const t = ERROR_TEXT[code] ?? code;
+    const text = typeof t === 'function' ? t({ name: country || 'el país indicado', example: '' }).replace(' Ejemplo: .', '') : t;
+    return `${labels[id] ?? id}: ${text}`;
+  });
+  return `Revisa los datos del formulario. ${parts.join(' ')}`;
+}
+
+/** Two tabs: SDK form and In-Web form. Keyboard: arrow keys move between tabs. */
+function renderTabs(root, initial) {
+  const list = h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Modalidad de captación' });
+  const defs = [['sdk', 'Formulario SDK'], ['inweb', 'Formulario In-Web']];
+  const panels = {};
+  const buttons = {};
+  let current = initial;
+  const handlers = [];
+  for (const [id, label] of defs) {
+    const b = h('button', { type: 'button', role: 'tab', id: `tab-${id}`, 'aria-controls': `panel-${id}`, class: 'tab' }, label);
+    const p = h('div', { role: 'tabpanel', id: `panel-${id}`, 'aria-labelledby': `tab-${id}`, class: 'tabpanel' });
+    buttons[id] = b; panels[id] = p;
+    b.addEventListener('click', () => select(id));
+    b.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const other = id === 'sdk' ? 'inweb' : 'sdk'; select(other); buttons[other].focus(); }
+    });
+    list.appendChild(b);
+  }
+  root.append(list, panels.sdk, panels.inweb);
+  function select(id) {
+    current = id;
+    for (const k of Object.keys(buttons)) {
+      const on = k === id;
+      buttons[k].setAttribute('aria-selected', on ? 'true' : 'false');
+      buttons[k].tabIndex = on ? 0 : -1;
+      panels[k].hidden = !on;
+    }
+    handlers.forEach((fn) => fn(id));
+  }
+  select(initial);
+  return { sdkPanel: panels.sdk, inwebPanel: panels.inweb, get current() { return current; }, onSelect: (fn) => handlers.push(fn) };
+}
+
+/** In-Web tab: status line + the container the SDK renders the console form into. */
+function renderInWebPanel(panel, cfg) {
+  const status = h('div', { class: 'inweb-status', role: 'status', 'aria-live': 'polite' });
+  const retry = h('button', { type: 'button', class: 'secondary', hidden: '' }, 'Reintentar');
+  const frame = h('div', { class: 'inweb-frame' });
+  const container = h('div', { id: cfg.viewId, class: 'inweb-container' });
+  container.style.width = `${cfg.width}px`;
+  container.style.height = `${cfg.height}px`;
+  frame.appendChild(container);
+  panel.append(status, retry, frame);
+  const COPY = {
+    [INWEB_STATES.IDLE]: ['', 'info'],
+    [INWEB_STATES.WAITING_DEVICE]: ['Primero activa las notificaciones (arriba) para cargar el formulario.', 'info'],
+    [INWEB_STATES.REQUESTING]: ['Cargando formulario…', 'info'],
+    [INWEB_STATES.RENDERED]: ['', 'info'],
+    [INWEB_STATES.UNAVAILABLE]: ['El formulario no está disponible en este momento.', 'info'],
+    [INWEB_STATES.ERROR]: ['No pudimos cargar el formulario. Inténtalo de nuevo en unos segundos.', 'error'],
+  };
+  let retryFn = () => {};
+  retry.addEventListener('click', () => retryFn());
+  const show = (text, tone) => {
+    status.textContent = text;
+    status.className = text ? `inweb-status notice notice-${tone}` : 'inweb-status';
+  };
+  return {
+    wanted: false,
+    onRetry(fn) { retryFn = fn; },
+    setState(state) {
+      if (state === INWEB_STATES.SUBMITTED) return;
+      const [text, tone] = COPY[state] ?? ['', 'info'];
+      show(text, tone);
+      retry.hidden = state !== INWEB_STATES.ERROR;
+      frame.hidden = [INWEB_STATES.UNAVAILABLE, INWEB_STATES.ERROR, INWEB_STATES.WAITING_DEVICE].includes(state);
+    },
+    message(text, tone) { show(text, tone); },
+    success(text) { frame.hidden = true; retry.hidden = true; show(text, 'success'); },
+  };
 }
 
 /** Diagnostics panel (only with ?debug). Shows masked data only. */
@@ -404,6 +592,12 @@ function createPanel() {
         'Escritura CDP (assignOrUpdateValueToCustomerFields)': state.cdp ?? '—',
         '5 · Evento': state.event ?? '—',
         'Última confirmación': state.lastConfirmation ?? '—',
+        ...(state.inwebLib ? {
+          'In-Web librería': state.inwebLib,
+          'In-Web campaña': state.inweb ?? '—',
+          'In-Web código / contenedor': state.inwebConfig ?? '—',
+          'In-Web formulario': state.inwebForm ?? '—',
+        } : {}),
       };
       stateEl.replaceChildren();
       for (const [k, v] of Object.entries(rows)) stateEl.append(h('dt', {}, k), h('dd', {}, String(v)));

@@ -1,4 +1,4 @@
-# Demos indigitall en GitHub Pages — v1.0.0
+# Demos indigitall en GitHub Pages — v1.1 (In-Web, en desarrollo)
 
 Demostraciones comerciales que integran el **SDK Web de indigitall 4.18.1** directamente desde el
 navegador: HTML, CSS y JavaScript nativo, sin backend, sin build y sin dependencias de ejecución.
@@ -91,6 +91,64 @@ con bandera SVG integrada e indicativo, y número nacional aparte. Validación p
 E.164, sin duplicar el indicativo (`+57…`, `0057…`, `57…`), prefijo nacional `0` eliminado y rechazo de
 números internacionales de otro país.
 
+## Modalidad In-Web (v1.1)
+
+La demo tiene dos pestañas que convergen en la misma CDP y el mismo Customer Journey:
+
+| Pestaña | Formulario | `Origen` |
+|---|---|---|
+| Formulario SDK | HTML propio (`demo.config.json` → `fields`) | `demo_cdp_lead_capture` |
+| Formulario In-Web | Diseñado en la consola de indigitall y pintado por el SDK | `demo_inweb_lead_capture` |
+
+**Librería:** `indigitall/sdk.min.js` 4.18.1 ya incluye el módulo In-App/In-Web (`indigitall.InApp`, con
+`showInAppWithCallback`). La distribución independiente `indigitall-web-inapp_v4.18.0.zip` (`inapp.min.js`)
+contiene el mismo módulo en una versión anterior y, cargada encima, reemplazaría `window.indigitall.InApp`; por
+eso no se incluye. Una sola distribución, una sola inicialización, un solo Service Worker.
+
+**Contrato efectivo (código de 4.18.1):**
+
+- `indigitall.InApp.showInAppWithCallback({ appKey, inAppCode, viewId[, urlInAppApi][, profile] }, callbacks)`.
+- Campaña: `GET https://device-api.indigitall.com/v2/inapp/campaign/{inAppCode}` (EU1; `urlInAppApi: null`).
+- `didFormSubmit(inApp, data)`: `data` es un objeto plano `{ idDelCampoEnConsola: valor }`; texto, número,
+  select y radio dan string; checkbox da un **array** de valores marcados; los campos vacíos no aparecen.
+- El SDK valida obligatorios y tipos y llama `didFormError(inApp, errorList)`. También envía las estadísticas del
+  formulario (`/inapp/event/form`).
+- Los campos marcados **«enviar al cliente» en la consola se escriben solos en la CDP sin tipos**
+  (`PUT /customer/field`): no usar esa opción, el Lead Flow escribe los atributos normalizados.
+- Identidad compartida: `InApp.logIn` usa el mismo `externalId` que `link()`, así que no se llama.
+- Si no hay Device ID, el módulo In-App crea un dispositivo propio y luego el registro push crearía otro; por eso
+  la campaña se pide **después del opt-in y del registro del dispositivo** (el visitante sigue siendo anónimo).
+
+**Flujo:** `didFormSubmit` → `inweb-form-adapter` → mismo `runLeadFlow` (validación, teléfono E.164, `link`,
+atributos, `lead_submitted`) con `staticAttributes` de `inweb`. `didClicked` nunca inicia el flujo.
+
+**Configuración (`demo.config.json` → `inweb`):** `inAppCode` (por defecto `demo_inweb_lead_capture`), `viewId`
+(`inweb-lead-container`), `width`/`height` (iguales al esquema), `urlInAppApi` (null en EU1), `profile`,
+`autoLoad`, `defaultCountry`, `staticAttributes.Origen` y `fieldMapping` (`campo de la demo → id del campo en la
+consola`). Con `?debug=1&inweb-code=OTRO_CODIGO` se prueba otro código sin desplegar. `?tab=inweb` abre la pestaña.
+
+**Pruebas sin consola:** `?mode=dry-run&debug=1` pinta un marcador de campaña simulada (no el formulario real) con
+botones para simular envío y clic; `&simulate-inweb=notfound|error` simula los estados de error.
+
+### Configurar la campaña en la consola
+
+1. **Esquema In-Web** `DEMO_InWeb_Lead_Capture`, código `demo_inweb_lead_capture`, tamaño **400 × 600 px** (si
+   se cambia, actualizar `inweb.width/height`).
+2. **Campaña** `DEMO_InWeb_Llamame` sobre ese esquema, con un formulario cuyos campos tengan estos **id**:
+   - `name` (texto, obligatorio) · `email` (texto, obligatorio; In-Web no tiene tipo email, la demo lo valida)
+   - `country` (select, obligatorio) con valores **CO, MX, PE, CL, US, EC, HN, ES** (texto visible libre)
+   - `phone` (texto, obligatorio; acepta número nacional o internacional con +)
+   - `product` (select, obligatorio) con valores exactamente **Plan Hogar, Plan Móvil, Plan Empresas**
+   - `consent` (checkbox, obligatorio) con el texto de consentimiento de llamada y WhatsApp
+   - Sin la opción «enviar al cliente» en ningún campo.
+   Si se usan otros id, cambiar `inweb.fieldMapping`; si no se usa `country`, el teléfono debe llevar +indicativo
+   (o se aplica `defaultCountry`).
+3. **Botón de envío:** acción de tipo *enviar formulario* (no URL ni cerrar), para que dispare `didFormSubmit`.
+4. **Frecuencia para pruebas:** sin límite de impresiones ni de clics, sin «no volver a mostrar», sin tiempo de
+   visualización, fechas de vigencia que cubran las pruebas. Para la demo comercial, límites razonables.
+5. **Publicación y segmentación:** campaña activa, plataforma Web, sin perfiles ni topics (visitante anónimo).
+   El dominio `https://mjrivera682.github.io` debe estar permitido en el proyecto.
+
 ## Crear una nueva demo
 
 1. Copia `demos/_template/` a `demos/<slug>/` (sin guion bajo inicial, para que se publique).
@@ -152,3 +210,7 @@ números internacionales de otro país.
 - **Páginas antiguas `src/` y `dist/`**: implementación de 2025 (no carga el SDK); candidatas a eliminarse
   con autorización.
 - **`docs/phase1/`** describe el diseño inicial, no v1.0.
+- **In-Web sin validar en real**: el formato de `didFormSubmit` se derivó del código de 4.18.1; falta observarlo con
+  la campaña real. Las pruebas usan fixtures con esa forma, no un payload capturado.
+- **In-Web necesita opt-in previo** (ver arriba). En móviles estrechos el contenedor de 400 px se desplaza en
+  horizontal porque el formulario se diseña con tamaño fijo en la consola.

@@ -88,5 +88,30 @@ export function validateConfig(config) {
   const verify = config.flow?.verifyProfile ?? 'off';
   need(verify === 'off', 'flow.verifyProfile must be "off": the flow does not read the profile back');
 
+  // Optional In-Web modality (same CDP, same event; only the static attributes differ).
+  const iw = config.inweb;
+  if (iw !== undefined && iw !== null) {
+    need(typeof iw.enabled === 'boolean', 'inweb.enabled must be true or false');
+    need(iw.inAppCode === null || (typeof iw.inAppCode === 'string' && /^[A-Za-z0-9_.-]+$/.test(iw.inAppCode)),
+      'inweb.inAppCode must be null or a code (letters, digits, _ . -)');
+    need(iw.urlInAppApi === null || iw.urlInAppApi === undefined || /^https:\/\/[^\s]+\/v2$/.test(iw.urlInAppApi),
+      'inweb.urlInAppApi must be null (EU1 default) or an https Device API v2 URL ending in /v2');
+    need(typeof iw.viewId === 'string' && /^[A-Za-z][\w-]*$/.test(iw.viewId), 'inweb.viewId must be a valid element id');
+    for (const dim of ['width', 'height']) {
+      need(Number.isInteger(iw[dim]) && iw[dim] > 0 && iw[dim] <= 2000, `inweb.${dim} must be a positive integer (px)`);
+    }
+    need(iw.profile === null || iw.profile === undefined || typeof iw.profile === 'string', 'inweb.profile must be null or a string');
+    need(iw.staticAttributes && typeof iw.staticAttributes === 'object', 'inweb.staticAttributes is required');
+    for (const k of Object.keys(iw.staticAttributes ?? {})) {
+      need(cdp.has(k), `inweb.staticAttributes.${k} must be an existing CDP attribute of this demo`);
+    }
+    const fm = iw.fieldMapping ?? {};
+    for (const k of ['name', 'email', 'phone', 'product', 'consent']) {
+      need(typeof fm[k] === 'string' && fm[k].length > 0, `inweb.fieldMapping.${k} is required (In-Web input id)`);
+    }
+    if (fm.country !== undefined) need(typeof fm.country === 'string', 'inweb.fieldMapping.country must be a string');
+    if (iw.defaultCountry !== undefined) need(Boolean(COUNTRIES[iw.defaultCountry]), 'inweb.defaultCountry must be a supported country');
+  }
+
   return problems;
 }

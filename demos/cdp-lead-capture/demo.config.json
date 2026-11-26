@@ -3,7 +3,7 @@
   "slug": "cdp-lead-capture",
   "title": "Solicita información — Demo CDP Lead Capture",
   "mode": "live",
-  "_provisional": "V1.0 (contrato congelado). Live con Web Push en EU1 (urlDeviceApi null). Para probar sin enviar nada: ?mode=dry-run. Diagnóstico: ?debug=1.",
+  "_provisional": "V1.1. Live con Web Push en EU1 (urlDeviceApi null). In-Web: misma CDP y mismo evento, Origen distinto (inweb.staticAttributes). Probar sin enviar nada: ?mode=dry-run. Diagnóstico: ?debug=1.",
   "indigitall": {
     "sdkVersion": "4.18.1",
     "appKey": "d7bf79c1-de69-48d0-bffc-2cdf540be87e",
@@ -125,5 +125,27 @@
   },
   "submitLabel": "Llámame",
   "busyLabel": "Enviando…",
-  "successMessage": "¡Gracias! Recibimos tu solicitud. En breve te contactaremos."
+  "successMessage": "¡Gracias! Recibimos tu solicitud. En breve te contactaremos.",
+  "inweb": {
+    "enabled": true,
+    "inAppCode": "demo_inweb_lead_capture",
+    "urlInAppApi": null,
+    "viewId": "inweb-lead-container",
+    "width": 400,
+    "height": 600,
+    "profile": null,
+    "autoLoad": true,
+    "defaultCountry": "CO",
+    "staticAttributes": {
+      "Origen": "demo_inweb_lead_capture"
+    },
+    "fieldMapping": {
+      "name": "name",
+      "email": "email",
+      "country": "country",
+      "phone": "phone",
+      "product": "product",
+      "consent": "consent"
+    }
+  }
 }

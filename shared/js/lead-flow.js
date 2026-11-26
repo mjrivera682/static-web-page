@@ -59,13 +59,17 @@ export function fingerprint(values) {
  * @param {object} p.guard       createGuard(...)
  * @param {object} p.diag        createDiagnostics(...)
  * @param {object} [p.identityStore] createIdentityStore(...): detects identity changes
+ * @param {object} [p.staticAttributes] overrides config.staticAttributes for this request only
  * @param {() => Date} [p.now]
  * @returns {Promise<{status:'sent'|'invalid'|'blocked'|'ignored', ...}>}
  *          resolves for validation/guard outcomes; rejects with FlowError on SDK failure
  */
 export async function runLeadFlow({
   config, rawValues, honeypot, client, guard, diag, identityStore, simulated = false, now = () => new Date(),
+  staticAttributes,
 }) {
+  // Per-request static attributes (e.g. Origen of the In-Web modality); the demo default otherwise.
+  const statics = staticAttributes ?? config.staticAttributes ?? {};
   if (guard.isBot(honeypot)) {
     diag.info('Honeypot filled: submission ignored');
     return { status: 'ignored' };
@@ -80,12 +84,12 @@ export async function runLeadFlow({
   const event = config.event;
   try {
     const externalId = buildExternalId(config.identity, values);
-    const customerFields = buildCustomerFields(config.cdpMapping, values, config.staticAttributes);
+    const customerFields = buildCustomerFields(config.cdpMapping, values, statics);
     const eventAt = now().toISOString();
     const eventData = buildEventData(event, values);
     // The demo flag (e.g. lead_source) also travels in the event, so the journey can
     // filter on it without reading the profile.
-    if (event.includeStaticAttributes) Object.assign(eventData, config.staticAttributes ?? {});
+    if (event.includeStaticAttributes) Object.assign(eventData, statics);
     if (event.includeTimestamp) eventData.submitted_at = eventAt;
 
     // 1-2. SDK operational and device registered (Web Push): required by link().
