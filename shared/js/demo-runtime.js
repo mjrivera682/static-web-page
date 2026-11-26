@@ -128,7 +128,7 @@ async function main() {
     const { values, honeypot } = ui.read();
     ui.setBusy(true);
     try {
-      const result = await runLeadFlow({ config, rawValues: values, honeypot, client, guard, diag });
+      const result = await runLeadFlow({ config, rawValues: values, honeypot, client, guard, diag, simulated: dryRun });
       if (result.status === 'invalid') { ui.showErrors(result.errors); return; }
       ui.showErrors({});
       if (result.status === 'blocked') {

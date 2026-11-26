@@ -31,6 +31,15 @@ test('happy path: documented order, profile before event', async () => {
   assert.deepEqual(methods(sim), ['init', 'link', 'assignOrUpdateValueToCustomerFields', 'getCustomerInformation', 'sendCustomerCustomEvent']);
 });
 
+test('dry-run is reported as SIMULATED, never as accepted by the API', async () => {
+  const { diag, client, guard } = await setup();
+  await runLeadFlow({ config, rawValues: RAW, client, guard, diag, simulated: true, now: FIXED_NOW });
+  assert.equal(diag.state.lastConfirmation, 'SIMULATED (dry-run)');
+  const live = await setup();
+  await live.run();
+  assert.equal(live.diag.state.lastConfirmation, 'ACCEPTED_BY_API');
+});
+
 test('init without Web Push', async () => {
   const { sim } = await setup();
   assert.equal(sim.calls[0].args[0].disabledPushService, true);

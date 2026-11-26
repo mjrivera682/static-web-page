@@ -46,7 +46,7 @@ export function compareFields(sent, received) {
  * @returns {Promise<{status:'sent'|'invalid'|'blocked'|'ignored', ...}>}
  *          resolves for validation/guard outcomes; rejects with FlowError on SDK failure
  */
-export async function runLeadFlow({ config, rawValues, honeypot, client, guard, diag, now = () => new Date() }) {
+export async function runLeadFlow({ config, rawValues, honeypot, client, guard, diag, simulated = false, now = () => new Date() }) {
   if (guard.isBot(honeypot)) {
     diag.info('Honeypot filled: submission ignored');
     return { status: 'ignored' };
@@ -96,8 +96,13 @@ export async function runLeadFlow({ config, rawValues, honeypot, client, guard, 
       () => client.sendEvent(event.name, submissionId, eventAt, eventData));
 
     guard.complete();
-    diag.set({ lastConfirmation: 'ACCEPTED_BY_API' });
-    diag.info('Event accepted by the API. Journey execution can only be confirmed in the indigitall console.');
+    if (simulated) {
+      diag.set({ lastConfirmation: 'SIMULATED (dry-run)' });
+      diag.info('Dry-run: nothing was sent to indigitall.');
+    } else {
+      diag.set({ lastConfirmation: 'ACCEPTED_BY_API' });
+      diag.info('Event accepted by the API. Journey execution can only be confirmed in the indigitall console.');
+    }
     return { status: 'sent', submissionId, verification };
   } catch (err) {
     guard.release();
