@@ -29,8 +29,19 @@ romper URLs publicadas: no cargan el SDK. Ya no hay webpack, npm ni `node_module
    Registros de la copia anterior en `/static-web-page/vendor/indigitall/` se desregistran al cargar la página.
 3. `indigitall.link(email, indigitall.Channel.PUSH)`: el SDK 4.18.1 rechaza `Channel.NONE`
    (`DISABLED_CHANNEL`) y exige permiso de notificaciones concedido.
-4. `indigitall.assignOrUpdateValueToCustomerFields({ name, email, phone, lead_source })`
-5. `indigitall.sendCustomerCustomEvent(eventCode, data, eventId, eventAt, ok, err)`:
+4. `indigitall.assignOrUpdateValueToCustomerFields({...})` con los atributos existentes en la CDP
+   (`cdpMapping` en `demo.config.json`):
+
+   | Atributo | Tipo | Valor |
+   |---|---|---|
+   | `name` | String | nombre |
+   | `email` | String | correo (también es el External ID) |
+   | `Phone` | Number | teléfono internacional completo sin `+`, p. ej. `573001234567` |
+   | `Country_code` | Number | indicativo, p. ej. `57` |
+   | `producto_de_interes` | String | producto seleccionado |
+   | `Origen` | String | `demo_cdp_lead_capture` (flag de los contactos de esta demo) |
+
+5. `indigitall.sendCustomerCustomEvent("lead_submitted", { name, phone: "+573001234567", product, Origen }, eventId, eventAt, ok, err)`:
    orden real del SDK 4.18.1 (la documentación muestra otro).
 
 Cada paso espera su callback de éxito. Si uno falla, el evento no se envía y no se muestra éxito.
@@ -38,6 +49,13 @@ No hay lectura de verificación del perfil (`flow.verifyProfile: "off"`): los at
 se comprueban en la consola de indigitall. No se usa ninguna API privada ni Server Key.
 Si las notificaciones están bloqueadas, la página lo indica y no permite enviar: sin dispositivo
 registrado el SDK no puede identificar al cliente.
+
+## Teléfono
+
+Selector de país (Colombia por defecto; México, Perú, Chile, Estados Unidos, Ecuador, Honduras,
+España) y número nacional en un campo aparte. Se valida según el país y se normaliza a E.164.
+Si se escribe el número con indicativo (`+57…`, `0057…` o `57…`) no se duplica; un número
+internacional de otro país se rechaza en lugar de cambiar el país.
 
 ## Crear una demo
 

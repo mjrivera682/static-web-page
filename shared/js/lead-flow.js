@@ -80,7 +80,7 @@ export async function runLeadFlow({
   const event = config.event;
   try {
     const externalId = buildExternalId(config.identity, values);
-    const customerFields = buildCustomerFields(config.fields, values, config.staticAttributes);
+    const customerFields = buildCustomerFields(config.cdpMapping, values, config.staticAttributes);
     const eventAt = now().toISOString();
     const eventData = buildEventData(event, values);
     // The demo flag (e.g. lead_source) also travels in the event, so the journey can

@@ -80,6 +80,15 @@ input:focus-visible, select:focus-visible, button:focus-visible {
 }
 [aria-invalid="true"] { border-color: var(--error); }
 
+.phone-group { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; }
+.phone-flag { display: inline-flex; line-height: 0; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+.phone-country { width: 100%; padding: 10px 12px; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+.phone-number { grid-column: 1 / -1; display: flex; align-items: stretch; }
+.phone-dial { display: flex; align-items: center; padding: 0 10px; background: var(--surface); border: 1px solid var(--border); border-right: none; border-radius: 8px 0 0 8px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.phone-number input { border-radius: 0 8px 8px 0; min-width: 0; }
+button.with-icon { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-icon { display: inline-flex; line-height: 0; }
+
 .help { color: var(--muted); }
 .error { margin: 0; color: var(--error); font-size: 0.9rem; min-height: 0; }
 .error:empty { display: none; }

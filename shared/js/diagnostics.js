@@ -34,7 +34,7 @@ export function maskText(value) {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+$/;
 const PHONE_RE = /^\+?\d[\d\s\-()]{6,}$/;
 const SAFE_KEYS = new Set([
-  'product', 'product_interest', 'contact_consent', 'lead_source', 'submitted_at', 'eventCode', 'eventAt',
+  'product', 'producto_de_interes', 'Country_code', 'Origen', 'contact_consent', 'submitted_at', 'eventCode', 'eventAt',
   'eventId', 'channel', 'pushMode', 'version', 'status', 'code', 'permission', 'workerPath', 'scope', 'push',
   'location',
   // SDK error fields: needed to diagnose failures.
@@ -43,7 +43,12 @@ const SAFE_KEYS = new Set([
 
 /** Mask any value that looks personal. Keys in SAFE_KEYS (non-personal) are shown as-is. */
 export function maskValue(key, value) {
-  if (value === null || value === undefined || typeof value === 'boolean' || typeof value === 'number') return value;
+  if (value === null || value === undefined || typeof value === 'boolean') return value;
+  if (typeof value === 'number') {
+    // Numeric phone (CDP "Phone") must be masked too; short numbers (codes, counts) are not personal.
+    if (SAFE_KEYS.has(key) || (!/phone/i.test(key) && String(Math.abs(value)).length < 7)) return value;
+    return maskPhone(String(value));
+  }
   if (typeof value === 'object') return maskObject(value);
   const s = String(value);
   if (SAFE_KEYS.has(key)) return s;

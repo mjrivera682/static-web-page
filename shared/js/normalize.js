@@ -1,11 +1,6 @@
-// Pure validation and normalization helpers. No DOM, no network.
+// Pure validation, normalization and CDP mapping helpers. No DOM, no network.
 
-/** Country calling codes for the markets we demo in. Extend as needed. */
-export const COUNTRY_CODES = {
-  AR: '54', BO: '591', BR: '55', CL: '56', CO: '57', CR: '506', DO: '1',
-  EC: '593', ES: '34', GT: '502', HN: '504', MX: '52', NI: '505', PA: '507',
-  PE: '51', PR: '1', PY: '595', SV: '503', US: '1', UY: '598', VE: '58',
-};
+import { COUNTRIES, countryFromInternational } from './countries.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
@@ -24,29 +19,44 @@ export function normalizeName(raw, { maxLength = 100 } = {}) {
 }
 
 /**
- * Normalize a phone number to E.164 (`+<country><number>`).
- * Accepts "+57 300 123 4567", "0057...", "573001234567" or a national number
- * (then `defaultCountry` is prepended). E.164 allows at most 15 digits.
+ * Validate a phone number for the selected country and normalize it.
+ * Accepts the national number ("300 123 4567"), the national number with the country
+ * code typed again ("57 300 123 4567") or a full international number ("+57 300…",
+ * "0057 300…"); the country code is never duplicated. An international number must
+ * belong to the selected country.
+ * @returns {{ok: true, value: {country, countryCode, national, digits, e164}} | {ok: false, error: string}}
  */
-export function normalizePhone(raw, { defaultCountry } = {}) {
+export function normalizePhone(raw, { country, countries } = {}) {
+  const allowed = countries?.length ? countries : Object.keys(COUNTRIES);
   const input = String(raw ?? '').trim();
   if (!input) return { ok: false, error: 'required' };
-  if (/[^\d\s()+.\-]/.test(input)) return { ok: false, error: 'invalid_phone' };
+  if (/[^\d\s()+.\-]/.test(input) || (input.indexOf('+') > 0)) return { ok: false, error: 'invalid_phone' };
+  const meta = COUNTRIES[country];
+  if (!meta || !allowed.includes(country)) return { ok: false, error: 'unknown_country' };
 
   let digits = input.replace(/\D/g, '');
-  const hasPlus = input.startsWith('+');
-  if (!hasPlus && digits.startsWith('00')) digits = digits.slice(2);
-  else if (!hasPlus) {
-    const cc = defaultCountry && COUNTRY_CODES[defaultCountry];
-    if (!cc) return { ok: false, error: 'unknown_country' };
-    if (!digits.startsWith(cc) || digits.length <= cc.length + 7) {
-      digits = cc + digits.replace(/^0+/, '');
+  let national;
+  if (input.startsWith('+') || digits.startsWith('00')) {
+    const intl = input.startsWith('+') ? digits : digits.slice(2);
+    const iso = countryFromInternational(intl, allowed);
+    if (!iso) return { ok: false, error: 'unsupported_country' };
+    if (iso !== country) return { ok: false, error: 'country_mismatch', detected: iso };
+    national = intl.slice(meta.dial.length);
+  } else {
+    national = digits;
+    // Country code typed again without "+": strip it only if what remains is valid.
+    if (!meta.national.test(national) && national.startsWith(meta.dial)
+      && meta.national.test(national.slice(meta.dial.length))) {
+      national = national.slice(meta.dial.length);
     }
   }
-  if (digits.length < 8 || digits.length > 15 || digits.startsWith('0')) {
-    return { ok: false, error: 'invalid_phone' };
+  // National trunk prefix "0" (e.g. Ecuador 09…, Perú 01…).
+  if (!meta.national.test(national) && national.startsWith('0') && meta.national.test(national.slice(1))) {
+    national = national.slice(1);
   }
-  return { ok: true, value: `+${digits}` };
+  if (!meta.national.test(national)) return { ok: false, error: 'invalid_phone_country' };
+  const full = meta.dial + national;
+  return { ok: true, value: { country, countryCode: meta.dial, national, digits: full, e164: `+${full}` } };
 }
 
 export function normalizeChoice(raw, options) {
@@ -62,10 +72,13 @@ export function normalizeCheckbox(raw) {
   return { ok: true, value: raw === true || raw === 'on' || raw === 'true' };
 }
 
-function normalizeField(field, raw) {
+function normalizeField(field, raw, rawValues) {
   switch (field.type) {
     case 'email': return normalizeEmail(raw);
-    case 'tel': return normalizePhone(raw, field.normalize ?? {});
+    case 'tel': return normalizePhone(raw, {
+      country: rawValues[`${field.id}_country`] || field.defaultCountry,
+      countries: field.countries,
+    });
     case 'select': return normalizeChoice(raw, field.options);
     case 'checkbox': return normalizeCheckbox(raw);
     default: return normalizeName(raw, { maxLength: field.maxLength ?? 100 });
@@ -74,6 +87,7 @@ function normalizeField(field, raw) {
 
 /**
  * Validate raw form values against the demo's field definitions.
+ * A tel field reads its country from rawValues[`${id}_country`].
  * Required checkboxes (e.g. consent) must be ticked.
  * @returns {{ok: boolean, values: Record<string, any>, errors: Record<string, string>}}
  */
@@ -84,7 +98,7 @@ export function validateLead(fields, rawValues) {
     const raw = rawValues[field.id];
     const empty = raw === undefined || raw === null || String(raw).trim() === '' || raw === false;
     if (!field.required && empty) continue;
-    const result = normalizeField(field, raw);
+    const result = normalizeField(field, raw, rawValues);
     if (!result.ok) { errors[field.id] = result.error; continue; }
     if (field.type === 'checkbox' && field.required && result.value !== true) {
       errors[field.id] = 'required';
@@ -106,27 +120,49 @@ export function buildExternalId(identity, values) {
       if (!values.email) throw new Error('externalId strategy "email" needs an email field');
       return prefix + values.email;
     case 'phone':
-      if (!values.phone) throw new Error('externalId strategy "phone" needs a phone field');
-      return prefix + values.phone;
+      if (!values.phone?.e164) throw new Error('externalId strategy "phone" needs a phone field');
+      return prefix + values.phone.e164;
     default:
       throw new Error(`Unknown externalId strategy: ${identity?.strategy}`);
   }
 }
 
-/** Map form values to CDP field names, then add the demo's static attributes. */
-export function buildCustomerFields(fields, values, staticAttributes = {}) {
+/** Read "field" or "field.part" (e.g. "phone.digits") from normalized values. */
+export function resolveValue(values, path) {
+  return String(path).split('.').reduce((v, k) => (v == null ? undefined : v[k]), values);
+}
+
+function coerce(value, type, name) {
+  if (type === 'number') {
+    const n = typeof value === 'number' ? value : Number(String(value));
+    if (!Number.isSafeInteger(n)) throw new Error(`${name}: "${value}" is not an integer number`);
+    return n;
+  }
+  if (type === 'boolean') return Boolean(value);
+  if (typeof value === 'object') throw new Error(`${name}: object value, map a part (e.g. phone.e164)`);
+  return String(value);
+}
+
+/**
+ * CDP attributes from the demo's cdpMapping (existing CDP fields only), plus static
+ * attributes. Each entry: { cdpField, from, type: "string" | "number" | "boolean" }.
+ */
+export function buildCustomerFields(mapping, values, staticAttributes = {}) {
   const out = {};
-  for (const field of fields) {
-    if (field.cdpField && values[field.id] !== undefined) out[field.cdpField] = values[field.id];
+  for (const m of mapping) {
+    const v = resolveValue(values, m.from);
+    if (v === undefined) continue;
+    out[m.cdpField] = coerce(v, m.type ?? 'string', m.cdpField);
   }
   return { ...out, ...staticAttributes };
 }
 
-/** Build the journey event payload: only the form fields the event config asks for. */
+/** Journey event payload. event.data entries: { key, from, type? }. */
 export function buildEventData(eventConfig, values) {
   const data = {};
-  for (const id of eventConfig.data ?? []) {
-    if (values[id] !== undefined) data[id] = values[id];
+  for (const d of eventConfig.data ?? []) {
+    const v = resolveValue(values, d.from);
+    if (v !== undefined) data[d.key] = coerce(v, d.type ?? 'string', d.key);
   }
   return data;
 }

@@ -1,8 +1,12 @@
 // Demo configuration validation. The runtime refuses to start with an invalid config.
 
+import { COUNTRIES } from './countries.js';
+
 export const APP_KEY_PLACEHOLDER = 'REPLACE_WITH_DEMO_APP_KEY';
 const FIELD_TYPES = new Set(['text', 'email', 'tel', 'select', 'checkbox']);
 const SENSITIVE_ID = /pass(word)?|pwd|secret|token|card|cvv|pin\b/i;
+const VALUE_TYPES = new Set(['string', 'number', 'boolean']);
+const PHONE_PARTS = new Set(['e164', 'digits', 'countryCode', 'national', 'country']);
 
 /** @returns {string[]} list of problems; empty when valid */
 export function validateConfig(config) {
@@ -31,21 +35,54 @@ export function validateConfig(config) {
   const fields = Array.isArray(config.fields) ? config.fields : [];
   need(fields.length > 0, 'fields must be a non-empty array');
   const ids = new Set();
-  const cdp = new Set();
+  const byId = {};
   for (const f of fields) {
     need(typeof f.id === 'string' && f.id, 'every field needs an id');
     need(FIELD_TYPES.has(f.type), `field ${f.id}: unknown type ${f.type}`);
-    need(!SENSITIVE_ID.test(f.id ?? '') && !SENSITIVE_ID.test(f.cdpField ?? ''), `field ${f.id}: passwords and payment data are not allowed`);
+    need(!SENSITIVE_ID.test(f.id ?? ''), `field ${f.id}: passwords and payment data are not allowed`);
+    need(!('cdpField' in f), `field ${f.id}: use cdpMapping instead of cdpField`);
     need(!ids.has(f.id), `duplicate field id ${f.id}`);
     ids.add(f.id);
-    if (f.cdpField) { need(!cdp.has(f.cdpField), `duplicate cdpField ${f.cdpField}`); cdp.add(f.cdpField); }
+    byId[f.id] = f;
     if (f.type === 'select') need(Array.isArray(f.options) && f.options.length > 0, `field ${f.id}: select needs options`);
+    if (f.type === 'tel') {
+      need(Array.isArray(f.countries) && f.countries.length > 0, `field ${f.id}: tel needs a countries list`);
+      for (const iso of f.countries ?? []) need(Boolean(COUNTRIES[iso]), `field ${f.id}: unknown country ${iso}`);
+      need((f.countries ?? []).includes(f.defaultCountry), `field ${f.id}: defaultCountry must be in countries`);
+    }
+  }
+
+  // Paths like "name" or "phone.digits" (tel fields expose e164, digits, countryCode, national, country).
+  const validPath = (path) => {
+    const [id, part, ...rest] = String(path ?? '').split('.');
+    if (!ids.has(id) || rest.length) return false;
+    if (byId[id].type === 'tel') return PHONE_PARTS.has(part);
+    return part === undefined;
+  };
+
+  const mapping = Array.isArray(config.cdpMapping) ? config.cdpMapping : [];
+  need(mapping.length > 0, 'cdpMapping must list the existing CDP attributes to write');
+  const cdp = new Set(Object.keys(config.staticAttributes ?? {}));
+  for (const m of mapping) {
+    need(typeof m.cdpField === 'string' && m.cdpField, 'every cdpMapping entry needs cdpField');
+    need(!SENSITIVE_ID.test(m.cdpField ?? ''), `cdpMapping ${m.cdpField}: passwords and payment data are not allowed`);
+    need(!cdp.has(m.cdpField), `duplicate CDP attribute ${m.cdpField}`);
+    cdp.add(m.cdpField);
+    need(validPath(m.from), `cdpMapping ${m.cdpField}: invalid source "${m.from}"`);
+    need(VALUE_TYPES.has(m.type ?? 'string'), `cdpMapping ${m.cdpField}: type must be string, number or boolean`);
+    if (validPath(m.from) && byId[String(m.from).split('.')[0]].type === 'tel') {
+      need(String(m.from).includes('.'), `cdpMapping ${m.cdpField}: map a part of the phone, e.g. phone.digits`);
+    }
   }
   const strategy = config.identity?.strategy;
   if (strategy) need(fields.some((f) => f.id === strategy && f.required), `identity.strategy "${strategy}" needs a required field with id "${strategy}"`);
 
   need(typeof config.event?.name === 'string' && config.event.name.length > 0, 'event.name is required');
-  for (const id of config.event?.data ?? []) need(ids.has(id), `event.data references unknown field ${id}`);
+  for (const d of config.event?.data ?? []) {
+    need(d && typeof d.key === 'string' && d.key, 'every event.data entry needs a key');
+    need(validPath(d?.from), `event.data ${d?.key}: invalid source "${d?.from}"`);
+    need(VALUE_TYPES.has(d?.type ?? 'string'), `event.data ${d?.key}: type must be string, number or boolean`);
+  }
 
   // No profile read-back in the flow (frontend-only SDK integration): only "off" is valid.
   const verify = config.flow?.verifyProfile ?? 'off';

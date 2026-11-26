@@ -79,7 +79,7 @@ test('config: every demo config in demos/ is valid', () => {
 
 test('config: password fields are rejected', () => {
   const c = structuredClone(base);
-  c.fields.push({ id: 'password', type: 'text', required: true, cdpField: 'password' });
+  c.fields.push({ id: 'password', type: 'text', required: true });
   assert.ok(validateConfig(c).some((p) => p.includes('passwords')));
 });
 
@@ -116,8 +116,23 @@ test('config: identity strategy must match a required field', () => {
   assert.ok(validateConfig(c).some((p) => p.includes('identity.strategy')));
 });
 
-test('config: event data must reference existing fields', () => {
+test('config: event data and CDP mapping must reference existing fields and phone parts', () => {
   const c = structuredClone(base);
-  c.event.data = ['nope'];
-  assert.ok(validateConfig(c).some((p) => p.includes('unknown field nope')));
+  c.event.data = [{ key: 'x', from: 'nope' }];
+  assert.ok(validateConfig(c).some((p) => p.includes('invalid source "nope"')));
+  const d = structuredClone(base);
+  d.cdpMapping.push({ cdpField: 'Other', from: 'phone', type: 'number' });
+  assert.ok(validateConfig(d).some((p) => p.includes('Other')));
+  const e = structuredClone(base);
+  e.cdpMapping[0].type = 'date';
+  assert.ok(validateConfig(e).some((p) => p.includes('type must be')));
+});
+
+test('config: legacy per-field cdpField and duplicated CDP attributes are rejected', () => {
+  const c = structuredClone(base);
+  c.fields[0].cdpField = 'name';
+  assert.ok(validateConfig(c).some((p) => p.includes('use cdpMapping')));
+  const d = structuredClone(base);
+  d.cdpMapping.push({ cdpField: 'Origen', from: 'name' });
+  assert.ok(validateConfig(d).some((p) => p.includes('duplicate CDP attribute Origen')));
 });

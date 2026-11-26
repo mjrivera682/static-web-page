@@ -131,13 +131,16 @@ test('link uses the email as External ID, without prefix, on Channel.PUSH', asyn
   assert.equal(diag.state.linkChannel, 'Channel.PUSH');
 });
 
-test('CDP contract: name, email, phone, lead_source; email equals the External ID', async () => {
+test('CDP contract: name, email, Phone, Country_code, producto_de_interes, Origen; email equals the External ID', async () => {
   const { sim, run } = await setup();
   await run();
   const fields = sim.calls[2].args[0];
   assert.deepEqual(fields, {
-    name: 'Ana', email: 'ana@example.com', phone: '+573001234567', lead_source: 'demo_cdp_lead_capture',
+    name: 'Ana', email: 'ana@example.com', Phone: 573001234567, Country_code: 57,
+    producto_de_interes: 'Plan Hogar', Origen: 'demo_cdp_lead_capture',
   });
+  assert.equal(typeof fields.Phone, 'number');
+  assert.equal(typeof fields.Country_code, 'number');
   assert.equal(fields.email, sim.calls[1].args[0]);
 });
 
@@ -146,7 +149,8 @@ test('event uses the SDK 4.18.1 order: code, data, eventId, eventAt', async () =
   const r = await run();
   const [eventCode, data, eventId, eventAt] = sim.calls[3].args;
   assert.equal(eventCode, 'lead_submitted');
-  assert.deepEqual(data, { name: 'Ana', phone: '+573001234567', product: 'Plan Hogar', lead_source: 'demo_cdp_lead_capture' });
+  assert.deepEqual(data, { name: 'Ana', phone: '+573001234567', product: 'Plan Hogar', Origen: 'demo_cdp_lead_capture' });
+  assert.equal(typeof data.phone, 'string');
   assert.equal(eventId, r.submissionId);
   assert.equal(eventAt, '2026-11-26T10:00:00.000Z');
   assert.deepEqual(sim.db.events[0].customData, data);

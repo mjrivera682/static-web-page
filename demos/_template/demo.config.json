@@ -20,27 +20,31 @@
       "id": "name",
       "label": "Nombre",
       "type": "text",
-      "required": true,
-      "cdpField": "name"
+      "required": true
     },
     {
       "id": "email",
       "label": "Correo electrónico",
       "type": "email",
-      "required": true,
-      "cdpField": "email"
+      "required": true
     },
     {
       "id": "phone",
       "label": "Teléfono",
       "type": "tel",
       "required": true,
-      "cdpField": "phone",
-      "placeholder": "+57 300 123 4567",
-      "help": "Te llamaremos o escribiremos por WhatsApp a este número.",
-      "normalize": {
-        "defaultCountry": "CO"
-      }
+      "countries": [
+        "CO",
+        "MX",
+        "PE",
+        "CL",
+        "US",
+        "EC",
+        "HN",
+        "ES"
+      ],
+      "defaultCountry": "CO",
+      "help": "Te llamaremos o escribiremos por WhatsApp a este número."
     },
     {
       "id": "product",
@@ -60,15 +64,51 @@
       "required": true
     }
   ],
+  "cdpMapping": [
+    {
+      "cdpField": "name",
+      "from": "name",
+      "type": "string"
+    },
+    {
+      "cdpField": "email",
+      "from": "email",
+      "type": "string"
+    },
+    {
+      "cdpField": "Phone",
+      "from": "phone.digits",
+      "type": "number"
+    },
+    {
+      "cdpField": "Country_code",
+      "from": "phone.countryCode",
+      "type": "number"
+    },
+    {
+      "cdpField": "producto_de_interes",
+      "from": "product",
+      "type": "string"
+    }
+  ],
   "staticAttributes": {
-    "lead_source": "demo_my_demo"
+    "Origen": "demo_my_demo"
   },
   "event": {
     "name": "lead_submitted",
     "data": [
-      "name",
-      "phone",
-      "product"
+      {
+        "key": "name",
+        "from": "name"
+      },
+      {
+        "key": "phone",
+        "from": "phone.e164"
+      },
+      {
+        "key": "product",
+        "from": "product"
+      }
     ],
     "includeStaticAttributes": true,
     "includeTimestamp": false
@@ -83,7 +123,7 @@
   "diagnostics": {
     "queryParam": "debug"
   },
-  "submitLabel": "Quiero que me contacten",
+  "submitLabel": "Llámame",
   "busyLabel": "Enviando…",
   "successMessage": "¡Gracias! Recibimos tu solicitud. En breve te contactaremos."
 }
