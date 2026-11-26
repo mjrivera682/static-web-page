@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # No npm install: the demos have no dependencies and no build step.
+      - name: Unit tests (includes validation of every demos/*/demo.config.json)
+        run: node --test "tests/unit/*.test.mjs"

@@ -1,0 +1,6 @@
+{
+  "name": "indigitall-demo-shared",
+  "private": true,
+  "type": "module",
+  "description": "Marks shared/js as ES modules so Node's test runner can import them. Not a build step."
+}

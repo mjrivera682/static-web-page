@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Demos indigitall</title>
+  <link rel="stylesheet" href="shared/css/demo-base.css">
+  <style>
+    .demo-list { list-style: none; padding: 0; display: grid; gap: 12px; }
+    .demo-list a { display: block; padding: 16px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); text-decoration: none; }
+    .demo-list a:hover { border-color: var(--accent); }
+    .demo-list span { display: block; color: var(--muted); font-size: 0.9rem; }
+    h2 { font-size: 1rem; color: var(--muted); margin-top: 32px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Demos indigitall</h1>
+      <p>Demostraciones comerciales sobre GitHub Pages.</p>
+    </header>
+
+    <h2>Demos con SDK</h2>
+    <ul class="demo-list">
+      <li><a href="demos/cdp-lead-capture/">CDP Lead Capture
+        <span>Formulario → perfil CDP → evento lead_submitted → Customer Journey. Añade ?debug=1 para el diagnóstico.</span></a></li>
+    </ul>
+
+    <h2>Otras demos</h2>
+    <ul class="demo-list">
+      <li><a href="Dominos_Peru_Demo_WhatsApp_V8_3_Tickets_Demo(2).html">Domino's Perú — WhatsApp conversacional
+        <span>Maqueta autónoma, sin SDK.</span></a></li>
+    </ul>
+
+    <h2>Legado (no mantenido)</h2>
+    <ul class="demo-list">
+      <li><a href="src/index.html">Smart TV (versión 2025)
+        <span>Implementación anterior con webpack. No funciona en esta URL; se conserva por compatibilidad.</span></a></li>
+    </ul>
+  </div>
+</body>
+</html>

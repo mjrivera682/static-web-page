@@ -1,9 +1,10 @@
-name: Deploy static site
+# LEGACY — paused. GitHub Pages serves the main branch root, not gh-pages, so this
+# workflow does not affect the published site. It only rewrote gh-pages (including the
+# App Key) on every push. Kept for manual use until the legacy cleanup.
+name: Deploy static site (legacy, manual only)
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build:

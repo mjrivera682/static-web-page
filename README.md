@@ -1,52 +1,51 @@
-# Static Web Page Project
+# Demos indigitall en GitHub Pages
 
-This project is a static web page that connects to APIs using a simplified integration framework. Below are the details of the project structure and setup instructions.
+Demostraciones comerciales que usan el Web SDK de indigitall sin backend ni build:
+HTML, CSS y JavaScript nativo. Lo que está en `main` es lo que publica GitHub Pages.
 
-## Project Structure
+- Portal: `https://mjrivera682.github.io/static-web-page/`
+- CDP Lead Capture: `…/static-web-page/demos/cdp-lead-capture/` (añade `?debug=1` para el diagnóstico)
+
+## Estructura
 
 ```
-static-web-page
-├── src
-│   ├── index.html          # Main HTML document
-│   ├── styles
-│   │   └── main.css       # Styles for the web page
-│   ├── scripts
-│   │   └── app.js         # JavaScript code for API integration
-│   └── assets              # Directory for static assets
-├── package.json            # npm configuration file
-├── webpack.config.js       # Webpack configuration file
-└── README.md               # Project documentation
+demos/<slug>/index.html          página de la demo (copiada de demos/_template)
+demos/<slug>/demo.config.json    App Key, campos, atributos CDP, evento
+shared/js/                       capa común (SDK, flujo, validación, diagnóstico)
+vendor/indigitall/<versión>/     SDK oficial (zip de "SDK Setup" en documentation.indigitall.com)
+tests/unit/                      pruebas: node --test "tests/unit/*.test.mjs"
 ```
 
-## Setup Instructions
+`src/`, `dist/`, `indigitall/`, `service-worker.js` y la configuración de webpack son la
+implementación anterior. Se conservan para no romper URLs publicadas.
 
-1. **Clone the repository**:
-   ```
-   git clone <repository-url>
-   cd static-web-page
-   ```
+## Flujo de Lead Capture (métodos documentados)
 
-2. **Install dependencies**:
-   ```
-   npm install
-   ```
+1. `indigitall.init({ appKey, disabledPushService: true })`: sin Web Push, sin permisos.
+2. `indigitall.link(externalId, indigitall.Channel.NONE)`
+3. `indigitall.assignOrUpdateValueToCustomerFields({ ... })`
+4. `indigitall.getCustomerInformation()`: verificación antes del evento (`flow.verifyProfile`).
+5. `indigitall.sendCustomerCustomEvent(eventCode, eventId, eventAt, data)`
 
-3. **Build the project**:
-   ```
-   npm run build
-   ```
+Cada paso espera su callback de éxito. Si uno falla, el evento no se envía y no se muestra éxito.
 
-4. **Serve the project**:
-   ```
-   npm start
-   ```
+## Crear una demo
 
-## Usage
+1. Copia `demos/_template/` a `demos/<slug>/`.
+2. Edita `demo.config.json`: `slug`, `fields` (`cdpField` = nombre del atributo en la CDP),
+   `identity.strategy` (`email` | `phone`), `event.name`, `event.data`.
+3. Déjala en `"mode": "dry-run"` (simulación local, sin llamadas) hasta tener el App Key del
+   proyecto de demo; después cambia a `"live"`.
+4. Ejecuta las pruebas: validan todas las configuraciones de `demos/`.
 
-- Open `src/index.html` in your browser to view the static web page.
-- The JavaScript in `src/scripts/app.js` handles API calls and updates the DOM based on the responses.
-- Customize styles in `src/styles/main.css` to change the appearance of the web page.
+En modo dry-run, `?simulate-fail=<método>` simula un error del SDK (p. ej.
+`?simulate-fail=sendCustomerCustomEvent`).
 
-## Contributing
+## Seguridad
 
-Feel free to submit issues or pull requests for improvements or bug fixes.
+- El App Key del Web SDK es público por diseño: usa un **proyecto exclusivo para demos**.
+- Las protecciones del formulario (doble envío, cooldown, honeypot) solo reducen ruido; no
+  son seguridad. Para impedir abusos con coste (llamadas, WhatsApp), filtra en el Customer
+  Journey (lista de contactos permitidos, límites de frecuencia).
+- Ninguna demo pide contraseñas ni permisos de notificaciones o ubicación. La validación de
+  configuración rechaza campos de contraseña o de pago.
