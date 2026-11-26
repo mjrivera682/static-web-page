@@ -10,7 +10,7 @@ import { runLeadFlow, FlowError, createIdentityStore } from '../../shared/js/lea
 const config = JSON.parse(readFileSync(new URL('../../demos/cdp-lead-capture/demo.config.json', import.meta.url), 'utf8'));
 const RAW = { name: 'Ana', email: 'Ana@Example.com', phone: '300 123 4567', product: 'Plan Hogar', consent: true };
 const FIXED_NOW = () => new Date('2026-11-26T10:00:00.000Z');
-const WORKER = '/static-web-page/vendor/indigitall/4.18.1/worker.min.js';
+const WORKER = '/static-web-page/indigitall/worker.min.js';
 
 function memoryStorage() {
   const m = new Map();
@@ -48,6 +48,15 @@ test('init enables Web Push with the vendor worker path and no location request'
   assert.equal(cfg.requestLocation, undefined);
   assert.equal(typeof cfg.onInitialized, 'function');
   assert.match(client.deviceId, /^sim-/);
+});
+
+test('only one indigitall.init per page: repeated init() calls reuse the first', async () => {
+  const sim = createSdkSimulator({ latencyMs: 1 });
+  const client = makeClient(sim);
+  const [a, b] = await Promise.all([client.init(), client.init()]);
+  await client.init();
+  assert.equal(sim.calls.filter((c) => c.method === 'init').length, 1);
+  assert.equal(a.deviceId, b.deviceId);
 });
 
 test('init resolves only once a Device ID exists (not when init() returns)', async () => {

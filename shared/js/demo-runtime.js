@@ -40,6 +40,28 @@ function fatal(root, message, details = []) {
   }
 }
 
+const SDK_DIR = '../../indigitall/';
+// Earlier builds served a second SDK copy from <site>/vendor/indigitall/<version>/.
+// Unregister only those registrations; other Service Workers on the origin (other
+// GitHub Pages sites of the same account) are never touched.
+const OLD_WORKER_PREFIX = new URL('../../vendor/indigitall/', import.meta.url).pathname;
+
+async function migrateServiceWorkers(diag) {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const r of regs) {
+      const script = [r.active, r.waiting, r.installing].find(Boolean)?.scriptURL;
+      if (script && new URL(script).pathname.startsWith(OLD_WORKER_PREFIX)) {
+        const ok = await r.unregister();
+        diag.info('Old Service Worker unregistered', { scope: new URL(r.scope).pathname, status: ok ? 'ok' : 'failed' });
+      }
+    }
+  } catch (err) {
+    diag.info('Service Worker migration skipped', { message: String(err.message ?? err) });
+  }
+}
+
 async function describeServiceWorker(workerPath) {
   if (!('serviceWorker' in navigator)) return { sw: 'unsupported' };
   try {
@@ -83,7 +105,10 @@ async function main() {
   const dryRun = config.mode === 'dry-run' || ind.appKey === APP_KEY_PLACEHOLDER;
   const debugParam = config.diagnostics?.queryParam ?? 'debug';
   const debug = params.has(debugParam) && params.get(debugParam) !== '0';
-  const workerPath = new URL(`../../vendor/indigitall/${ind.sdkVersion}/worker.min.js`, import.meta.url).pathname;
+  // Single SDK copy for the whole site: /indigitall/sdk.min.js + /indigitall/worker.min.js
+  // (official local-files layout), resolved under the GitHub Pages subdirectory.
+  const sdkUrl = new URL(SDK_DIR + 'sdk.min.js', import.meta.url).href;
+  const workerPath = new URL(SDK_DIR + 'worker.min.js', import.meta.url).pathname;
 
   document.title = config.title ?? document.title;
   const panel = debug ? createPanel() : null;
@@ -124,7 +149,7 @@ async function main() {
     diag.set({ sdk: 'loading' });
     try {
       await diag.step('loadSdk', { version: ind.sdkVersion },
-        () => loadScript(new URL(`../../vendor/indigitall/${ind.sdkVersion}/sdk.min.js`, import.meta.url).href));
+        () => loadScript(sdkUrl));
       diag.set({ sdk: 'loaded' });
     } catch {
       diag.set({ sdk: 'error' });
@@ -141,6 +166,10 @@ async function main() {
     onSdkError: (msg) => diag.info('SDK onError', typeof msg === 'string' ? { message: msg } : msg),
   });
   diag.set({ sdkVersion: client.version(), swUrl: client.pushEnabled ? workerPath : 'not used (push disabled)' });
+  if (!dryRun && client.version() && client.version() !== ind.sdkVersion) {
+    diag.info('SDK version mismatch', { declared: ind.sdkVersion, loaded: client.version() });
+  }
+  if (client.pushEnabled && !dryRun) await migrateServiceWorkers(diag);
 
   const guard = createGuard({ scope: config.slug, cooldownSeconds: config.guard?.cooldownSeconds ?? 0, storage: window.localStorage });
   const identityStore = createIdentityStore({ scope: config.slug, storage: window.localStorage });

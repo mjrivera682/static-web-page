@@ -1,7 +1,7 @@
 // The only module that knows indigitall SDK method names. Every call is turned into a
 // Promise with a timeout, so a callback that never fires is reported as an error.
 //
-// Signatures are taken from the SDK 4.18.1 code (vendor/indigitall/4.18.1/sdk.min.js),
+// Signatures are taken from the SDK 4.18.1 code (indigitall/sdk.min.js),
 // which differs from the docs in two places that matter here:
 //   - link(externalId, channel, ok, err): Customer.link rejects Channel.NONE with
 //     DISABLED_CHANNEL, and the internal logIn requires push permission "granted" and
@@ -48,6 +48,7 @@ export function createIndigitallClient({
 }) {
   const pushEnabled = settings.pushMode === 'enabled';
   let initialized = false;
+  let initPromise = null; // one indigitall.init() per page: later calls reuse it
   let device = null; // { deviceId, permissions } once onInitialized fires with a device id
 
   function sdk() {
@@ -111,7 +112,8 @@ export function createIndigitallClient({
      * @returns {Promise<{deviceId: string|null, permissions: any}>}
      */
     init() {
-      return new Promise((resolve, reject) => {
+      if (initPromise) return initPromise;
+      initPromise = new Promise((resolve, reject) => {
         let settled = false;
         const finish = (fn, value) => { if (!settled) { settled = true; clearTimeout(timer); fn(value); } };
         const timer = pushEnabled
@@ -152,6 +154,7 @@ export function createIndigitallClient({
           finish(reject, err instanceof SdkError ? err : new SdkError('INIT_FAILED', 'indigitall.init threw', err));
         }
       });
+      return initPromise;
     },
 
     /** Identify the customer and link this device: link(externalId, Channel.PUSH). */

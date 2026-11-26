@@ -12,12 +12,12 @@ HTML, CSS y JavaScript nativo. Lo que está en `main` es lo que publica GitHub P
 demos/<slug>/index.html          página de la demo (copiada de demos/_template)
 demos/<slug>/demo.config.json    App Key, campos, atributos CDP, evento
 shared/js/                       capa común (SDK, flujo, validación, diagnóstico)
-vendor/indigitall/<versión>/     SDK oficial (zip de "SDK Setup" en documentation.indigitall.com)
+indigitall/                      SDK Web 4.18.1: sdk.min.js + worker.min.js (única copia del sitio)
 tests/unit/                      pruebas: node --test "tests/unit/*.test.mjs"
 ```
 
-`src/`, `dist/`, `indigitall/`, `service-worker.js` y la configuración de webpack son la
-implementación anterior. Se conservan para no romper URLs publicadas.
+`src/` y `dist/` son páginas de la implementación anterior (Smart TV, 2025), congeladas para no
+romper URLs publicadas: no cargan el SDK. Ya no hay webpack, npm ni `node_modules`.
 
 ## Flujo de Lead Capture (SDK 4.18.1)
 
@@ -25,7 +25,8 @@ implementación anterior. Se conservan para no romper URLs publicadas.
    (gesto del usuario). Si el permiso ya estaba concedido no se vuelve a pedir.
 2. `indigitall.init({ appKey, workerPath, onInitialized, onError })` con Web Push activo.
    El dispositivo está registrado cuando `onInitialized` entrega un `deviceId`.
-   Service Worker: `/static-web-page/vendor/indigitall/4.18.1/worker.min.js`.
+   Service Worker: `workerPath: /static-web-page/indigitall/worker.min.js` (scope `/static-web-page/indigitall/`).
+   Registros de la copia anterior en `/static-web-page/vendor/indigitall/` se desregistran al cargar la página.
 3. `indigitall.link(email, indigitall.Channel.PUSH)`: el SDK 4.18.1 rechaza `Channel.NONE`
    (`DISABLED_CHANNEL`) y exige permiso de notificaciones concedido.
 4. `indigitall.assignOrUpdateValueToCustomerFields({ name, email, phone, lead_source })`

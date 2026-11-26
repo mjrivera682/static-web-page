@@ -1,20 +1,8 @@
 {
   "name": "static-web-page",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "indigitall demos on GitHub Pages. No build step and no runtime dependencies.",
   "scripts": {
-    "build": "webpack"
-  },
-  "devDependencies": {
-    "copy-webpack-plugin": "^9.1.0",
-    "css-loader": "^6.11.0",
-    "html-webpack-plugin": "^5.6.3",
-    "style-loader": "^3.3.4",
-    "webpack": "^5.0.0",
-    "webpack-cli": "^4.0.0"
-  },
-  "dependencies": {
-    "indigitall-webpush": "^4.1.4"
+    "test": "node --test \"tests/unit/*.test.mjs\""
   }
 }
