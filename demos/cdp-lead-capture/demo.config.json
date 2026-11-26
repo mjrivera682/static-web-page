@@ -6,7 +6,7 @@
   "_provisional": "LIVE con Web Push: el SDK 4.18.1 identifica (link con Channel.PUSH) solo con el permiso de notificaciones concedido y el dispositivo registrado. Para volver a simulacion: \"mode\": \"dry-run\". urlDeviceApi null = endpoint por defecto https://device-api.indigitall.com.",
   "indigitall": {
     "sdkVersion": "4.18.1",
-    "appKey": "5894aaa8-3972-4b97-9747-b6175946dcdd",
+    "appKey": "d7bf79c1-de69-48d0-bffc-2cdf540be87e",
     "urlDeviceApi": null,
     "pushMode": "enabled",
     "logLevel": "ERROR"
