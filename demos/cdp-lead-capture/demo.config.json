@@ -3,7 +3,7 @@
   "slug": "cdp-lead-capture",
   "title": "Solicita información — Demo CDP Lead Capture",
   "mode": "dry-run",
-  "_provisional": "Valores marcados TODO pendientes de confirmar con indigitall: appKey, urlDeviceApi, identity.strategy, cdpField, event.name, event.data.",
+  "_provisional": "Pendiente de indigitall: appKey, urlDeviceApi y event.name. Identificador = email (link + campo email). lead_source es el flag que distingue estos leads de demo de otros leads.",
   "indigitall": {
     "sdkVersion": "4.18.1",
     "appKey": "REPLACE_WITH_DEMO_APP_KEY",
@@ -16,36 +16,73 @@
     "prefix": ""
   },
   "fields": [
-    { "id": "name", "label": "Nombre", "type": "text", "required": true, "cdpField": "name" },
-    { "id": "email", "label": "Correo electrónico", "type": "email", "required": true, "cdpField": "email" },
     {
-      "id": "phone", "label": "Teléfono", "type": "tel", "required": true, "cdpField": "phone",
+      "id": "name",
+      "label": "Nombre",
+      "type": "text",
+      "required": true,
+      "cdpField": "name"
+    },
+    {
+      "id": "email",
+      "label": "Correo electrónico",
+      "type": "email",
+      "required": true,
+      "cdpField": "email"
+    },
+    {
+      "id": "phone",
+      "label": "Teléfono",
+      "type": "tel",
+      "required": true,
+      "cdpField": "phone",
       "placeholder": "+57 300 123 4567",
       "help": "Te llamaremos o escribiremos por WhatsApp a este número.",
-      "normalize": { "defaultCountry": "CO" }
+      "normalize": {
+        "defaultCountry": "CO"
+      }
     },
     {
-      "id": "product", "label": "Producto de interés", "type": "select", "required": true,
-      "cdpField": "product_interest",
-      "options": ["Plan Hogar", "Plan Móvil", "Plan Empresas"]
+      "id": "product",
+      "label": "Producto de interés",
+      "type": "select",
+      "required": true,
+      "options": [
+        "Plan Hogar",
+        "Plan Móvil",
+        "Plan Empresas"
+      ]
     },
     {
-      "id": "consent", "label": "Acepto que me contacten por teléfono y WhatsApp sobre mi solicitud.",
-      "type": "checkbox", "required": true, "cdpField": "contact_consent"
+      "id": "consent",
+      "label": "Acepto que me contacten por teléfono y WhatsApp sobre mi solicitud.",
+      "type": "checkbox",
+      "required": true
     }
   ],
-  "staticAttributes": { "lead_source": "web_demo_cdp_lead_capture" },
+  "staticAttributes": {
+    "lead_source": "demo_cdp_lead_capture"
+  },
   "event": {
     "name": "lead_submitted",
-    "data": ["name", "product"],
-    "includeTimestamp": true
+    "data": [
+      "name",
+      "phone",
+      "product"
+    ],
+    "includeStaticAttributes": true,
+    "includeTimestamp": false
   },
   "flow": {
     "verifyProfile": "lenient",
     "operationTimeoutMs": 10000
   },
-  "guard": { "cooldownSeconds": 120 },
-  "diagnostics": { "queryParam": "debug" },
+  "guard": {
+    "cooldownSeconds": 120
+  },
+  "diagnostics": {
+    "queryParam": "debug"
+  },
   "submitLabel": "Quiero que me contacten",
   "busyLabel": "Enviando…",
   "successMessage": "¡Gracias! Recibimos tu solicitud. En breve te contactaremos."

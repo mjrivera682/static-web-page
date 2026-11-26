@@ -47,7 +47,6 @@
       "label": "Producto de interés",
       "type": "select",
       "required": true,
-      "cdpField": "product_interest",
       "options": [
         "Plan Hogar",
         "Plan Móvil",
@@ -58,20 +57,21 @@
       "id": "consent",
       "label": "Acepto que me contacten por teléfono y WhatsApp sobre mi solicitud.",
       "type": "checkbox",
-      "required": true,
-      "cdpField": "contact_consent"
+      "required": true
     }
   ],
   "staticAttributes": {
-    "lead_source": "web_demo_my_demo"
+    "lead_source": "demo_my_demo"
   },
   "event": {
     "name": "lead_submitted",
     "data": [
       "name",
+      "phone",
       "product"
     ],
-    "includeTimestamp": true
+    "includeStaticAttributes": true,
+    "includeTimestamp": false
   },
   "flow": {
     "verifyProfile": "lenient",

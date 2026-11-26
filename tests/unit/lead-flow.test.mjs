@@ -43,13 +43,15 @@ test('link uses the normalized external id and Channel.NONE', async () => {
   assert.deepEqual(sim.calls[1].args, ['ana@example.com', 'none']);
 });
 
-test('fields are sent as an object with CDP names', async () => {
+test('email is both the external id and the email field; profile stays minimal with the demo flag', async () => {
   const { sim, run } = await setup();
   await run();
-  assert.deepEqual(sim.calls[2].args[0], {
-    name: 'Ana', email: 'ana@example.com', phone: '+573001234567', product_interest: 'Plan Hogar',
-    contact_consent: true, lead_source: 'web_demo_cdp_lead_capture',
+  const [externalId] = sim.calls[1].args;
+  const fields = sim.calls[2].args[0];
+  assert.deepEqual(fields, {
+    name: 'Ana', email: 'ana@example.com', phone: '+573001234567', lead_source: 'demo_cdp_lead_capture',
   });
+  assert.equal(fields.email, externalId);
 });
 
 test('event follows the documented 6-argument signature', async () => {
@@ -59,7 +61,7 @@ test('event follows the documented 6-argument signature', async () => {
   assert.equal(eventCode, 'lead_submitted');
   assert.equal(eventId, r.submissionId);
   assert.equal(eventAt, '2026-11-26T10:00:00.000Z');
-  assert.deepEqual(data, { name: 'Ana', product: 'Plan Hogar', submitted_at: '2026-11-26T10:00:00.000Z' });
+  assert.deepEqual(data, { name: 'Ana', phone: '+573001234567', product: 'Plan Hogar', lead_source: 'demo_cdp_lead_capture' });
   assert.ok(!JSON.stringify(data).toLowerCase().includes('password'));
 });
 

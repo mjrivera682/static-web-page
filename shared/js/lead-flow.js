@@ -65,6 +65,9 @@ export async function runLeadFlow({ config, rawValues, honeypot, client, guard, 
     const customerFields = buildCustomerFields(config.fields, values, config.staticAttributes);
     const eventAt = now().toISOString();
     const eventData = buildEventData(event, values);
+    // The demo flag (e.g. lead_source) also travels in the event, so the journey can
+    // filter on it without reading the profile.
+    if (event.includeStaticAttributes) Object.assign(eventData, config.staticAttributes ?? {});
     if (event.includeTimestamp) eventData.submitted_at = eventAt;
 
     await run(diag, 'identify', { externalId, channel: 'Channel.NONE' }, () => client.identify(externalId));
