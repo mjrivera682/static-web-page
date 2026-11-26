@@ -141,5 +141,13 @@ button:disabled { opacity: 0.6; cursor: progress; }
 .diag-log { padding-left: 20px; }
 .diag-log li { margin: 6px 0; }
 .diag-log pre { margin: 4px 0 0; padding: 8px; background: var(--bg); border-radius: 6px; overflow-x: auto; }
+.diag-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.diag-results:empty { display: none; }
+.diag-results { margin: 8px 0; padding: 10px 12px; background: var(--bg); border-radius: 8px; }
+.diag-results h3 { margin: 0 0 6px; font-size: 0.95rem; }
+.diag-results ul, .diag-results ol { margin: 0 0 8px; padding-left: 20px; }
+.res-ok { color: var(--success); }
+.res-failed { color: var(--error); font-weight: 600; }
+.res-skipped, .res-running { color: var(--muted); }
 .lvl-error strong { color: var(--error); }
 .lvl-ok strong { color: var(--success); }

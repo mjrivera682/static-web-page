@@ -14,6 +14,10 @@ import { createDiagnostics, maskValue, maskId } from './diagnostics.js';
 import { renderForm } from './form-renderer.js';
 import { runLeadFlow, createIdentityStore } from './lead-flow.js';
 import { PUSH_STATES, browserPermissions, simulatedPermissions, renderOptIn } from './push-optin.js';
+import {
+  resetCustomerSession, resetIntegration, succeeded, permissionResetInstructions,
+  SDK_LOCAL_PREFIX, SDK_SESSION_PREFIX, SDK_IDB_NAME,
+} from './reset.js';
 
 const STEP_LABEL = {
   device: 'Primero activa las notificaciones (paso 1).',
@@ -174,6 +178,55 @@ async function main() {
   const guard = createGuard({ scope: config.slug, cooldownSeconds: config.guard?.cooldownSeconds ?? 0, storage: window.localStorage });
   const identityStore = createIdentityStore({ scope: config.slug, storage: window.localStorage });
 
+  // --- Reset actions (diagnostics only). Wired before registration so they also
+  // work when init fails (REGISTRATION_FAILED / HTTP 403) or never completes.
+  if (panel) {
+    const resultKey = `demo.${config.slug}.lastReset`;
+    const persist = (title, results) => {
+      try { sessionStorage.setItem(resultKey, JSON.stringify({ title, results, at: new Date().toISOString() })); } catch { /* ignore */ }
+    };
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(resultKey) ?? 'null');
+      if (saved) { panel.showResults(saved.title, saved.results, { afterReload: true }); sessionStorage.removeItem(resultKey); }
+    } catch { /* ignore */ }
+
+    panel.setActions({
+      async session() {
+        const title = 'Nueva sesión de cliente';
+        panel.showResults(title, [{ step: '…', status: 'running', detail: 'en curso' }]);
+        const results = await resetCustomerSession({ client, guard, identityStore });
+        diag.info('Reset: customer session', { status: succeeded(results) ? 'ok' : 'failed' });
+        if (succeeded(results)) { persist(title, results); location.reload(); } else panel.showResults(title, results);
+      },
+      async integration() {
+        const title = 'Reiniciar integración SDK';
+        const proceed = window.confirm([
+          'Reiniciar integración SDK en este navegador:',
+          '· unlink del cliente (si hay sesión válida)',
+          `· suscripción push y Service Worker de ${workerPath}`,
+          `· localStorage "${SDK_LOCAL_PREFIX}*", sessionStorage "${SDK_SESSION_PREFIX}*", IndexedDB "${SDK_IDB_NAME}"`,
+          `· estado de la demo "demo.${config.slug}.*"`,
+          '',
+          'Los datos del SDK de indigitall son por dominio: otra web de mjrivera682.github.io que use este SDK compartiría esas claves. No se toca nada más. ¿Continuar?',
+        ].join('\n'));
+        if (!proceed) return;
+        panel.showResults(title, [{ step: '…', status: 'running', detail: 'en curso' }]);
+        const results = await resetIntegration({
+          client, guard, identityStore, workerPath, slug: config.slug,
+          env: {
+            localStorage: window.localStorage, sessionStorage: window.sessionStorage,
+            indexedDB: window.indexedDB, serviceWorker: navigator.serviceWorker, document,
+          },
+        });
+        diag.info('Reset: SDK integration', { status: succeeded(results) ? 'ok' : 'failed' });
+        if (succeeded(results)) { persist(title, results); location.reload(); } else panel.showResults(title, results, { offerReload: true });
+      },
+      permission() {
+        panel.showPermissionHelp(permissions.state(), permissionResetInstructions(navigator.userAgent));
+      },
+    });
+  }
+
   // --- Web Push opt-in and device registration -------------------------------
   const optIn = client.pushEnabled ? renderOptIn(document, optInHost) : null;
   const setPush = (state) => {
@@ -224,15 +277,6 @@ async function main() {
     if (!dryRun) diag.set(await describeServiceWorker(workerPath));
   }
 
-  panel?.onReset(async () => {
-    if (client.initialized) {
-      try { await diag.step('unlink', { channel: client.channelName }, () => client.reset()); } catch { /* shown in log */ }
-    }
-    guard.reset();
-    identityStore.forget();
-    location.reload();
-  });
-
   // --- Form -------------------------------------------------------------------
   ui.form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
@@ -276,13 +320,57 @@ function createPanel() {
   const legend = h('p', { class: 'diag-legend' },
     'Etapas: SDK cargado → SDK inicializado → dispositivo registrado → usuario identificado → evento aceptado (ACCEPTED_BY_API). '
     + 'La ejecución del Customer Journey solo se confirma en la consola de indigitall.');
-  const reset = h('button', { type: 'button', class: 'secondary' }, 'Nueva sesión (unlink)');
+  const actions = h('div', { class: 'diag-actions' });
+  const btnSession = h('button', { type: 'button', class: 'secondary' }, '1 · Nueva sesión de cliente');
+  const btnIntegration = h('button', { type: 'button', class: 'secondary' }, '2 · Reiniciar integración SDK');
+  const btnPermission = h('button', { type: 'button', class: 'secondary' }, '3 · Restablecer permisos del navegador');
+  actions.append(btnSession, btnIntegration, btnPermission);
+  const actionsHelp = h('p', { class: 'diag-legend' },
+    '1: unlink + identidad y cooldown de la demo; conserva dispositivo y suscripción. '
+    + '2: además elimina suscripción push, Service Worker y datos del SDK de esta demo, y recarga. '
+    + '3: instrucciones para devolver el permiso de notificaciones a «preguntar».');
+  const results = h('div', { class: 'diag-results', 'aria-live': 'polite' });
   const log = h('ol', { class: 'diag-log' });
-  box.append(title, stateEl, legend, reset, log);
+  box.append(title, stateEl, legend, actions, actionsHelp, results, log);
   document.body.appendChild(box);
 
+  const buttons = [btnSession, btnIntegration, btnPermission];
+  const wrap = (fn) => async () => {
+    buttons.forEach((b) => { b.disabled = true; });
+    try { await fn(); } finally { buttons.forEach((b) => { b.disabled = false; }); }
+  };
+
   return {
-    onReset(fn) { reset.addEventListener('click', fn); },
+    setActions({ session, integration, permission }) {
+      btnSession.addEventListener('click', wrap(session));
+      btnIntegration.addEventListener('click', wrap(integration));
+      btnPermission.addEventListener('click', wrap(permission));
+    },
+    showResults(titleText, list, { afterReload = false, offerReload = false } = {}) {
+      const failedAny = list.some((r) => r.status === 'failed');
+      const running = list.some((r) => r.status === 'running');
+      const verdict = running ? 'en curso' : failedAny ? 'FALLÓ: algún paso necesario no se completó' : 'OK';
+      results.replaceChildren(h('h3', {}, `${titleText}: ${verdict}${afterReload ? ' (resultado antes de recargar)' : ''}`));
+      const ul = h('ul');
+      for (const r of list) ul.appendChild(h('li', { class: `res-${r.status}` }, `${r.status.toUpperCase()} · ${r.step} — ${r.detail}`));
+      results.appendChild(ul);
+      if (offerReload) {
+        const again = h('button', { type: 'button', class: 'secondary' }, 'Recargar de todos modos');
+        again.addEventListener('click', () => location.reload());
+        results.appendChild(again);
+      }
+    },
+    showPermissionHelp(current, steps) {
+      results.replaceChildren(h('h3', {}, `Restablecer permisos del navegador (estado actual: ${current})`));
+      results.appendChild(h('p', {}, 'JavaScript no puede revocar el permiso de notificaciones: hay que hacerlo en el navegador. '
+        + 'Recomendado: ejecuta antes «2 · Reiniciar integración SDK» para eliminar la suscripción anterior.'));
+      const ol = h('ol');
+      for (const st of steps) ol.appendChild(h('li', {}, st));
+      results.appendChild(ol);
+      const check = h('button', { type: 'button', class: 'secondary' }, 'Ya lo restablecí: recargar');
+      check.addEventListener('click', () => location.reload());
+      results.appendChild(check);
+    },
     update(entry, state) {
       const rows = {
         'Modo': state.mode,
