@@ -15,7 +15,7 @@ import { renderForm } from './form-renderer.js';
 import { runLeadFlow, createIdentityStore } from './lead-flow.js';
 import { PUSH_STATES, browserPermissions, simulatedPermissions, renderOptIn } from './push-optin.js';
 import {
-  resetCustomerSession, resetIntegration, succeeded, permissionResetInstructions,
+  resetCustomerSession, resetIntegration, resetIfAppKeyChanged, succeeded, permissionResetInstructions,
   SDK_LOCAL_PREFIX, SDK_SESSION_PREFIX, SDK_IDB_NAME,
 } from './reset.js';
 
@@ -176,6 +176,22 @@ async function main() {
 
   const guard = createGuard({ scope: config.slug, cooldownSeconds: config.guard?.cooldownSeconds ?? 0, storage: window.localStorage });
   const identityStore = createIdentityStore({ scope: config.slug, storage: window.localStorage });
+
+  // SDK state left by a different App Key (old key or another demo on this origin) must not
+  // be reused: clear it before init. Only runs when the stored key differs.
+  if (!dryRun) {
+    const env = {
+      localStorage: window.localStorage, sessionStorage: window.sessionStorage,
+      indexedDB: window.indexedDB, serviceWorker: navigator.serviceWorker, document,
+    };
+    const check = await resetIfAppKeyChanged({ appKey: ind.appKey, workerPath, env, identityStore });
+    if (check.changed) {
+      diag.info('SDK state from another App Key cleared before init', {
+        status: succeeded(check.results) ? 'ok' : 'failed',
+        steps: check.results.map((r) => `${r.status} · ${r.step}`).join(' | '),
+      });
+    }
+  }
 
   // --- Reset actions (diagnostics only). Wired before registration so they also
   // work when init fails (REGISTRATION_FAILED / HTTP 403) or never completes.

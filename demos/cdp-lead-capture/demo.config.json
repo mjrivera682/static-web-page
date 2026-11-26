@@ -3,7 +3,7 @@
   "slug": "cdp-lead-capture",
   "title": "Solicita información — Demo CDP Lead Capture",
   "mode": "live",
-  "_provisional": "LIVE con Web Push: el SDK 4.18.1 identifica (link con Channel.PUSH) solo con el permiso de notificaciones concedido y el dispositivo registrado. Para volver a simulacion: \"mode\": \"dry-run\". urlDeviceApi null = endpoint por defecto https://device-api.indigitall.com.",
+  "_provisional": "V1.0 (contrato congelado). Live con Web Push en EU1 (urlDeviceApi null). Para probar sin enviar nada: ?mode=dry-run. Diagnóstico: ?debug=1.",
   "indigitall": {
     "sdkVersion": "4.18.1",
     "appKey": "d7bf79c1-de69-48d0-bffc-2cdf540be87e",

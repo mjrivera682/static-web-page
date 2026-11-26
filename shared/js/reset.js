@@ -172,7 +172,23 @@ export async function resetIntegration({ client, guard, identityStore, workerPat
       : 'no customer linked from this browser'));
   }
 
-  // 2-3. Push subscription and Service Worker of this demo only.
+  // 2-4. Push subscription, Service Worker and SDK storage.
+  results.push(...await resetSdkState({ workerPath, env }));
+  results.push(cookieCheck('cookies', env.document));
+
+  // 5. Demo state (stored cooldown and identity hash), then the in-memory copies.
+  results.push(removeKeys('demo localStorage', env.localStorage, `demo.${slug}.`));
+  guard.reset();
+  identityStore.forget();
+  return results;
+}
+
+/**
+ * SDK-owned state only: push subscription + registration of workerPath, SDK localStorage /
+ * sessionStorage prefixes and the SDK IndexedDB database. Demo keys are not touched.
+ */
+export async function resetSdkState({ workerPath, env }) {
+  const results = [];
   let registration = null;
   try {
     registration = await findRegistration(env.serviceWorker, workerPath);
@@ -181,18 +197,30 @@ export async function resetIntegration({ client, guard, identityStore, workerPat
   }
   results.push(await unsubscribePush('push subscription', registration));
   results.push(await unregisterWorker('Service Worker', registration));
-
-  // 4. SDK storage (prefixes and database owned by the SDK).
   results.push(removeKeys('SDK localStorage', env.localStorage, SDK_LOCAL_PREFIX));
   results.push(removeKeys('SDK sessionStorage', env.sessionStorage, SDK_SESSION_PREFIX));
   results.push(await deleteDatabase('SDK IndexedDB', env.indexedDB, SDK_IDB_NAME));
-  results.push(cookieCheck('cookies', env.document));
-
-  // 5. Demo state (stored cooldown and identity hash), then the in-memory copies.
-  results.push(removeKeys('demo localStorage', env.localStorage, `demo.${slug}.`));
-  guard.reset();
-  identityStore.forget();
   return results;
+}
+
+// Where SDK 4.18.1 keeps the App Key it is using (setAppKey/getAppKey in sdk.min.js).
+export const SDK_APP_KEY_KEY = `${SDK_LOCAL_PREFIX}APP_KEY`;
+
+/**
+ * SDK 4.18.1 init(): while its sync window is open it returns the stored device through
+ * onInitialized *before* saving config.appKey, so state left by another App Key (an old
+ * key, or another demo on this origin) keeps being used. If the stored App Key differs
+ * from this demo's, clear the SDK state before init. Read-only check otherwise.
+ * @returns {Promise<{changed: boolean, previous: string|null, results: object[]}>}
+ */
+export async function resetIfAppKeyChanged({ appKey, workerPath, env, identityStore }) {
+  let previous = null;
+  try { previous = env.localStorage?.getItem(SDK_APP_KEY_KEY) ?? null; } catch { /* storage blocked */ }
+  if (!previous || previous === appKey) return { changed: false, previous, results: [] };
+  const results = await resetSdkState({ workerPath, env });
+  // The linked-identity hash belonged to the previous App Key's project.
+  identityStore?.forget();
+  return { changed: true, previous, results };
 }
 
 /** Browser-specific steps to reset the notification permission (JS cannot revoke it). */

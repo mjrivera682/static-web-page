@@ -182,3 +182,55 @@ test('permission help: browser-specific manual steps, always ending with a reloa
   }
   assert.match(permissionResetInstructions('Firefox').join(' '), /Enviar notificaciones/);
 });
+
+// --- App Key change (SDK state from another key / another demo) -------------------
+
+test('App Key unchanged or no SDK state → nothing is touched', async () => {
+  const { resetIfAppKeyChanged } = await import('../../shared/js/reset.js');
+  for (const stored of [null, 'KEY-A']) {
+    const local = webStorage(stored ? { 'indigitall.repository.APP_KEY': stored, 'indigitall.repository.DEVICE_ID': 'd' } : {});
+    const reg = fakeRegistration(WORKER);
+    const r = await resetIfAppKeyChanged({
+      appKey: 'KEY-A', workerPath: WORKER,
+      env: { localStorage: local, sessionStorage: webStorage(), indexedDB: fakeIdb(), serviceWorker: { getRegistrations: async () => [reg] } },
+    });
+    assert.equal(r.changed, false);
+    assert.equal(reg.unregistered, false);
+    if (stored) assert.equal(local.getItem('indigitall.repository.DEVICE_ID'), 'd');
+  }
+});
+
+test('App Key changed → SDK state and our worker cleared, demo cooldown and other keys kept', async () => {
+  const { resetIfAppKeyChanged } = await import('../../shared/js/reset.js');
+  const local = webStorage({
+    'indigitall.repository.APP_KEY': 'OLD-KEY', 'indigitall.repository.DEVICE_ID': 'd',
+    'demo.cdp-lead-capture.lastSentAt': '1', 'other.site': 'keep',
+  });
+  const identityStore = createIdentityStore({ scope: SLUG, storage: local });
+  identityStore.remember(await identityStore.fingerprint('ana@example.com'));
+  const ours = fakeRegistration(WORKER);
+  const other = fakeRegistration('/another-repo/sw.js');
+  const idb = fakeIdb();
+  const r = await resetIfAppKeyChanged({
+    appKey: 'NEW-KEY', workerPath: WORKER, identityStore,
+    env: { localStorage: local, sessionStorage: webStorage(), indexedDB: idb, serviceWorker: { getRegistrations: async () => [other, ours] } },
+  });
+  assert.equal(r.changed, true);
+  assert.equal(r.previous, 'OLD-KEY');
+  assert.ok(succeeded(r.results));
+  assert.ok(ours.unsubscribed && ours.unregistered && !other.unregistered);
+  assert.deepEqual(idb.deleted, ['indigitall.indexedDB']);
+  assert.deepEqual(local.keys(), ['demo.cdp-lead-capture.lastSentAt', 'other.site']);
+  assert.equal(identityStore.previous(), null);
+});
+
+// --- Reload: state that must survive a new page instance ---------------------------
+
+test('reload keeps the cooldown and the linked identity (new guard/store, same storage)', async () => {
+  const local = webStorage();
+  const { identityStore } = await linkedState(local);
+  const guardAfterReload = createGuard({ scope: SLUG, cooldownSeconds: 120, storage: local });
+  assert.equal(guardAfterReload.acquire('x'), null, 'cooldown survives reload');
+  const storeAfterReload = createIdentityStore({ scope: SLUG, storage: local });
+  assert.equal(storeAfterReload.previous(), identityStore.previous());
+});
