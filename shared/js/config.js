@@ -20,7 +20,11 @@ export function validateConfig(config) {
   need(typeof ind.appKey === 'string' && ind.appKey.length > 0, 'indigitall.appKey is required');
   need(['disabled', 'enabled'].includes(ind.pushMode ?? 'disabled'), 'indigitall.pushMode must be "disabled" or "enabled"');
   need(['dry-run', 'live'].includes(config.mode), 'mode must be "dry-run" or "live"');
-  if (config.mode === 'live') need(ind.appKey !== APP_KEY_PLACEHOLDER, 'mode "live" needs a real appKey');
+  if (config.mode === 'live') {
+    need(ind.appKey !== APP_KEY_PLACEHOLDER, 'mode "live" needs a real appKey');
+    // SDK 4.18.1: link() rejects Channel.NONE and needs the push service enabled.
+    need(ind.pushMode === 'enabled', 'mode "live" needs indigitall.pushMode "enabled" (customer identification requires Web Push)');
+  }
 
   need(['email', 'phone'].includes(config.identity?.strategy), 'identity.strategy must be "email" or "phone"');
 

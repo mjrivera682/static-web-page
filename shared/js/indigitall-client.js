@@ -1,11 +1,18 @@
 // The only module that knows indigitall SDK method names. Every call is turned into a
 // Promise with a timeout, so a callback that never fires is reported as an error.
-// Methods and signatures follow the official docs:
-//   init ............................ /reference/initialization-19
-//   link / unlink ................... /reference/integration-25
-//   assignOrUpdateValueToCustomerFields /reference/customization-16
-//   getCustomer / getCustomerInformation /reference/initialization-19
-//   sendCustomerCustomEvent ......... /reference/custom-events-1
+//
+// Signatures are taken from the SDK 4.18.1 code (vendor/indigitall/4.18.1/sdk.min.js),
+// which differs from the docs in two places that matter here:
+//   - link(externalId, channel, ok, err): Customer.link rejects Channel.NONE with
+//     DISABLED_CHANNEL, and the internal logIn requires push permission "granted" and
+//     the push service enabled. Identification therefore needs Web Push.
+//   - sendCustomerCustomEvent(eventCode, customData, eventId, eventAt, ok, err)
+//     (the docs show eventId/eventAt before the data).
+//
+// Push init sequence in 4.18.1: init → postDevice (Device ID) → register the Service
+// Worker at workerPath → pushManager.subscribe() → putDevice → onInitialized(permissions,
+// device). If the permission is already "denied", init stops early with
+// onError("Push permission denied") and no device is created.
 
 export class SdkError extends Error {
   constructor(code, message, sdkError) {
@@ -30,13 +37,18 @@ export function loadScript(src, doc = globalThis.document) {
 
 /**
  * @param {object} opts
- * @param {() => any} opts.getSdk       returns window.indigitall (or a simulator)
- * @param {object} opts.settings        demo config "indigitall" block
- * @param {number} [opts.timeoutMs]
- * @param {(msg: any) => void} [opts.onSdkError]  SDK global onError messages
+ * @param {() => any} opts.getSdk          returns window.indigitall (or a simulator)
+ * @param {object} opts.settings           demo config "indigitall" block (+ workerPath)
+ * @param {number} [opts.timeoutMs]        per-operation timeout
+ * @param {number} [opts.registrationTimeoutMs]  wait for onInitialized after init
+ * @param {(msg: any) => void} [opts.onSdkError]  every SDK onError message
  */
-export function createIndigitallClient({ getSdk, settings, timeoutMs = 10000, onSdkError }) {
+export function createIndigitallClient({
+  getSdk, settings, timeoutMs = 10000, registrationTimeoutMs = 30000, onSdkError,
+}) {
+  const pushEnabled = settings.pushMode === 'enabled';
   let initialized = false;
+  let device = null; // { deviceId, permissions } once onInitialized fires with a device id
 
   function sdk() {
     const s = getSdk();
@@ -44,8 +56,9 @@ export function createIndigitallClient({ getSdk, settings, timeoutMs = 10000, on
     return s;
   }
 
-  function channelNone() {
-    return sdk().Channel?.NONE ?? 'none';
+  function channel() {
+    const c = sdk().Channel ?? {};
+    return pushEnabled ? (c.PUSH ?? 'push') : (c.NONE ?? 'none');
   }
 
   /** Call `method(...args, success, error)` and resolve/reject on its callbacks. */
@@ -71,73 +84,108 @@ export function createIndigitallClient({ getSdk, settings, timeoutMs = 10000, on
     });
   }
 
-  function requireInit() {
+  function requireDevice() {
     if (!initialized) throw new SdkError('NOT_INITIALIZED', 'Call init() first');
+    if (pushEnabled && !device?.deviceId) throw new SdkError('DEVICE_NOT_REGISTERED', 'The device is not registered yet');
   }
 
   return {
     get initialized() { return initialized; },
+    get pushEnabled() { return pushEnabled; },
+    get deviceId() { return device?.deviceId ?? null; },
+    get channelName() { return pushEnabled ? 'Channel.PUSH' : 'Channel.NONE'; },
 
     version() {
       try { return sdk().version ?? null; } catch { return null; }
     },
 
+    isSafari() {
+      try { return Boolean(sdk().isSafariBrowserDevice?.()); } catch { return false; }
+    },
+
     /**
-     * Initialize without Web Push (documented for sites that don't use push).
-     * With disabledPushService the docs don't promise an onInitialized callback,
-     * so "ready" means init() returned without throwing.
+     * Initialize the SDK. With Web Push enabled this resolves only when onInitialized
+     * delivers a device with a Device ID (device registered); it rejects on a fatal
+     * onError or after registrationTimeoutMs. Call it after the browser permission is
+     * "granted", so subscribe() does not need to prompt outside a user gesture.
+     * @returns {Promise<{deviceId: string|null, permissions: any}>}
      */
-    async init() {
-      const config = {
-        appKey: settings.appKey,
-        disabledPushService: settings.pushMode !== 'enabled',
-        onError: (msg) => onSdkError?.(msg),
-      };
-      if (settings.urlDeviceApi) config.urlDeviceApi = settings.urlDeviceApi;
-      if (settings.logLevel && sdk().LogLevel?.[settings.logLevel] !== undefined) {
-        config.logLevel = sdk().LogLevel[settings.logLevel];
-      }
-      try {
-        await sdk().init(config);
-      } catch (err) {
-        throw err instanceof SdkError ? err : new SdkError('INIT_FAILED', 'indigitall.init threw', err);
-      }
-      initialized = true;
-      return { disabledPushService: config.disabledPushService };
+    init() {
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        const finish = (fn, value) => { if (!settled) { settled = true; clearTimeout(timer); fn(value); } };
+        const timer = pushEnabled
+          ? setTimeout(() => finish(reject, new SdkError('REGISTRATION_TIMEOUT',
+            `Device not registered after ${registrationTimeoutMs} ms`)), registrationTimeoutMs)
+          : null;
+
+        const config = {
+          appKey: settings.appKey,
+          disabledPushService: !pushEnabled,
+          onInitialized: (permissions, dev) => {
+            const deviceId = dev?.deviceId ?? null;
+            if (!deviceId) return; // not registered yet: keep waiting for a later callback
+            device = { deviceId, permissions };
+            initialized = true;
+            finish(resolve, { deviceId, permissions });
+          },
+          onError: (msg) => {
+            onSdkError?.(msg);
+            if (!pushEnabled) return; // "Push Service disabled" is expected then
+            if (msg === 'Push permission denied') {
+              finish(reject, new SdkError('PUSH_PERMISSION_DENIED', 'Notifications are blocked in this browser', msg));
+            } else if (typeof msg === 'object' && msg !== null) {
+              finish(reject, new SdkError('REGISTRATION_FAILED', 'Device registration failed', msg));
+            }
+          },
+        };
+        if (pushEnabled) config.workerPath = settings.workerPath;
+        if (settings.urlDeviceApi) config.urlDeviceApi = settings.urlDeviceApi;
+        try {
+          if (settings.logLevel && sdk().LogLevel?.[settings.logLevel] !== undefined) {
+            config.logLevel = sdk().LogLevel[settings.logLevel];
+          }
+          Promise.resolve(sdk().init(config)).then(() => {
+            if (!pushEnabled) { initialized = true; finish(resolve, { deviceId: null, permissions: null }); }
+          }, (err) => finish(reject, new SdkError('INIT_FAILED', 'indigitall.init failed', err)));
+        } catch (err) {
+          finish(reject, err instanceof SdkError ? err : new SdkError('INIT_FAILED', 'indigitall.init threw', err));
+        }
+      });
     },
 
-    /** Identify the customer: link(externalId, Channel.NONE). */
+    /** Identify the customer and link this device: link(externalId, Channel.PUSH). */
     identify(externalId) {
-      requireInit();
-      return call('link', [externalId, channelNone()]);
+      requireDevice();
+      return call('link', [externalId, channel()]);
     },
 
-    /** Create/update customer fields. Always pass an object (docs: JSON object). */
+    /** Create/update customer fields. Always pass an object (a string triggers a parse bug). */
     setFields(fields) {
-      requireInit();
+      requireDevice();
       return call('assignOrUpdateValueToCustomerFields', [{ ...fields }]);
     },
 
     getFields() {
-      requireInit();
+      requireDevice();
       return call('getCustomerInformation', []);
     },
 
     getCustomer() {
-      requireInit();
+      requireDevice();
       return call('getCustomer', []);
     },
 
-    /** Trigger a Customer Journey event. */
+    /** Trigger a Customer Journey event. SDK 4.18.1 order: code, data, eventId, eventAt. */
     sendEvent(eventCode, eventId, eventAt, data) {
-      requireInit();
-      return call('sendCustomerCustomEvent', [eventCode, eventId, eventAt, { ...data }]);
+      requireDevice();
+      return call('sendCustomerCustomEvent', [eventCode, { ...data }, eventId, eventAt]);
     },
 
-    /** Unlink the customer (used by "new session" in diagnostics). */
+    /** Unlink the customer from this device on the same channel used to link it. */
     reset() {
-      requireInit();
-      return call('unlink', [channelNone()]);
+      requireDevice();
+      return call('unlink', [channel()]);
     },
   };
 }

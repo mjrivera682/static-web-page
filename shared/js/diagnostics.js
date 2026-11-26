@@ -19,6 +19,13 @@ export function maskPhone(value) {
   return `${s.startsWith('+') ? '+' : ''}${digits.slice(0, 2)}${'*'.repeat(digits.length - 6)}${digits.slice(-4)}`;
 }
 
+/** Technical identifiers (Device ID): keep the ends so two devices can be told apart. */
+export function maskId(value) {
+  const s = String(value ?? '');
+  if (s.length <= 8) return s ? `${s[0]}***` : '';
+  return `${s.slice(0, 4)}…${s.slice(-4)}`;
+}
+
 export function maskText(value) {
   const s = String(value ?? '');
   return s ? `${s[0]}***` : '';
@@ -28,7 +35,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+$/;
 const PHONE_RE = /^\+?\d[\d\s\-()]{6,}$/;
 const SAFE_KEYS = new Set([
   'product', 'product_interest', 'contact_consent', 'lead_source', 'submitted_at', 'eventCode', 'eventAt',
-  'eventId', 'channel', 'pushMode', 'version', 'status', 'code',
+  'eventId', 'channel', 'pushMode', 'version', 'status', 'code', 'permission', 'workerPath', 'scope', 'push',
+  'location',
   // SDK error fields: needed to diagnose failures.
   'errorMessage', 'errorCode', 'statusCode', 'message',
 ]);
@@ -61,9 +69,11 @@ export function maskObject(obj) {
 export function createDiagnostics({ enabled, now = () => performance.now(), onEntry } = {}) {
   const entries = [];
   const state = {
-    sdkVersion: null, sdkDeclaredVersion: null, mode: null,
-    init: 'idle', identity: 'anonymous', externalId: null, customerId: null,
-    lastConfirmation: null,
+    mode: null, sdkDeclaredVersion: null, sdkVersion: null, sdk: 'not loaded',
+    init: 'idle', permission: null, swUrl: null, sw: null,
+    device: 'not registered', deviceId: null,
+    linkChannel: null, identity: 'anonymous', externalId: null,
+    cdp: null, verification: null, event: null, lastConfirmation: null,
   };
 
   function push(entry) {

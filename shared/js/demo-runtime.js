@@ -2,16 +2,21 @@
 // Usage in a demo's index.html:
 //   <main id="demo" data-config="./demo.config.json"></main>
 //   <script type="module" src="../../shared/js/demo-runtime.js"></script>
+//
+// Sequence (Web Push enabled): load SDK → permission (opt-in button, user gesture)
+// → indigitall.init → device registered (Device ID) → form unlocked → lead flow.
 
 import { validateConfig, APP_KEY_PLACEHOLDER } from './config.js';
 import { createIndigitallClient, loadScript } from './indigitall-client.js';
 import { createSdkSimulator } from './sdk-simulator.js';
 import { createGuard } from './guard.js';
-import { createDiagnostics, maskValue } from './diagnostics.js';
+import { createDiagnostics, maskValue, maskId } from './diagnostics.js';
 import { renderForm } from './form-renderer.js';
-import { runLeadFlow } from './lead-flow.js';
+import { runLeadFlow, createIdentityStore } from './lead-flow.js';
+import { PUSH_STATES, browserPermissions, simulatedPermissions, renderOptIn } from './push-optin.js';
 
 const STEP_LABEL = {
+  device: 'Primero activa las notificaciones (paso 1).',
   identify: 'No pudimos identificar tu perfil.',
   setFields: 'No pudimos guardar tus datos.',
   verify: 'No pudimos confirmar que tus datos se guardaron.',
@@ -32,6 +37,22 @@ function fatal(root, message, details = []) {
     const ul = h('ul', { class: 'notice-details' });
     for (const d of details) ul.appendChild(h('li', {}, d));
     root.appendChild(ul);
+  }
+}
+
+async function describeServiceWorker(workerPath) {
+  if (!('serviceWorker' in navigator)) return { sw: 'unsupported' };
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    const ours = regs.find((r) => [r.active, r.waiting, r.installing].some((w) => w?.scriptURL?.endsWith(workerPath)));
+    const others = regs.filter((r) => r !== ours).map((r) => new URL(r.scope).pathname);
+    const worker = ours?.active ?? ours?.waiting ?? ours?.installing;
+    return {
+      sw: ours ? `${worker?.state ?? 'registered'} · scope ${new URL(ours.scope).pathname}` : 'not registered',
+      swOthers: others.length ? others.join(', ') : 'none',
+    };
+  } catch (err) {
+    return { sw: `error: ${err.message ?? err}` };
   }
 }
 
@@ -62,6 +83,7 @@ async function main() {
   const dryRun = config.mode === 'dry-run' || ind.appKey === APP_KEY_PLACEHOLDER;
   const debugParam = config.diagnostics?.queryParam ?? 'debug';
   const debug = params.has(debugParam) && params.get(debugParam) !== '0';
+  const workerPath = new URL(`../../vendor/indigitall/${ind.sdkVersion}/worker.min.js`, import.meta.url).pathname;
 
   document.title = config.title ?? document.title;
   const panel = debug ? createPanel() : null;
@@ -73,23 +95,39 @@ async function main() {
       'Modo de prueba: no se envía nada a indigitall. Los datos solo se simulan en este navegador.'));
   }
 
+  const optInHost = h('div');
   const formHost = h('div');
   const status = h('div', { class: 'status', role: 'status', 'aria-live': 'polite' });
-  root.append(formHost, status);
+  root.append(optInHost, formHost, status);
   const ui = renderForm(document, formHost, config);
-  ui.setBusy(true);
+  ui.setLocked(true);
 
+  // --- SDK --------------------------------------------------------------------
   let getSdk;
+  let permissions;
   if (dryRun) {
+    // ?simulate-permission=granted|denied|dismissed|blocked|already-granted
+    const p = params.get('simulate-permission') ?? 'granted';
+    const initial = p === 'blocked' ? 'denied' : p === 'already-granted' ? 'granted' : 'default';
+    const answer = p === 'dismissed' ? 'default' : p === 'already-granted' ? 'granted' : p === 'blocked' ? 'denied' : p;
     const failMethod = params.get('simulate-fail');
-    const sim = createSdkSimulator({ fail: failMethod ? { [failMethod]: { errorMessage: 'simulated failure' } } : {} });
+    const sim = createSdkSimulator({
+      permission: initial,
+      fail: failMethod ? { [failMethod]: { errorMessage: 'simulated failure' } } : {},
+    });
     getSdk = () => sim;
+    permissions = simulatedPermissions({ initial, answer, sdk: sim });
+    diag.set({ sdk: 'simulator' });
   } else {
     getSdk = () => window.indigitall;
+    permissions = browserPermissions();
+    diag.set({ sdk: 'loading' });
     try {
       await diag.step('loadSdk', { version: ind.sdkVersion },
         () => loadScript(new URL(`../../vendor/indigitall/${ind.sdkVersion}/sdk.min.js`, import.meta.url).href));
+      diag.set({ sdk: 'loaded' });
     } catch {
+      diag.set({ sdk: 'error' });
       fatal(root, 'No se pudo cargar el SDK de indigitall. Inténtalo más tarde.');
       return;
     }
@@ -97,30 +135,76 @@ async function main() {
 
   const client = createIndigitallClient({
     getSdk,
-    settings: { ...ind, logLevel: debug ? 'DEBUG' : (ind.logLevel ?? 'ERROR') },
+    settings: { ...ind, workerPath, logLevel: debug ? 'DEBUG' : (ind.logLevel ?? 'ERROR') },
     timeoutMs: config.flow?.operationTimeoutMs ?? 10000,
-    onSdkError: (msg) => diag.info('SDK onError', { message: typeof msg === 'string' ? msg : JSON.stringify(msg) }),
+    registrationTimeoutMs: config.flow?.registrationTimeoutMs ?? 30000,
+    onSdkError: (msg) => diag.info('SDK onError', typeof msg === 'string' ? { message: msg } : msg),
   });
-  const guard = createGuard({ scope: config.slug, cooldownSeconds: config.guard?.cooldownSeconds ?? 0, storage: window.localStorage });
+  diag.set({ sdkVersion: client.version(), swUrl: client.pushEnabled ? workerPath : 'not used (push disabled)' });
 
-  diag.set({ init: 'initializing' });
-  try {
-    await diag.step('init', { pushMode: ind.pushMode ?? 'disabled' }, () => client.init());
-    diag.set({ init: 'initialized', sdkVersion: client.version() });
-  } catch {
-    diag.set({ init: 'error' });
-    fatal(root, 'No se pudo inicializar el SDK de indigitall.');
-    return;
+  const guard = createGuard({ scope: config.slug, cooldownSeconds: config.guard?.cooldownSeconds ?? 0, storage: window.localStorage });
+  const identityStore = createIdentityStore({ scope: config.slug, storage: window.localStorage });
+
+  // --- Web Push opt-in and device registration -------------------------------
+  const optIn = client.pushEnabled ? renderOptIn(document, optInHost) : null;
+  const setPush = (state) => {
+    optIn?.set(state);
+    diag.set({ permission: permissions.state() });
+  };
+
+  async function startRegistration() {
+    setPush(PUSH_STATES.REGISTERING);
+    diag.set({ init: 'initializing', device: client.pushEnabled ? 'registering' : 'not used' });
+    try {
+      const { deviceId, permissions: perms } = await diag.step('init', { pushMode: ind.pushMode, workerPath }, () => client.init());
+      diag.set({
+        init: 'initialized',
+        device: client.pushEnabled ? 'registered' : 'not used',
+        deviceId: deviceId ? maskId(deviceId) : null,
+        permission: perms?.push ?? permissions.state(),
+      });
+      setPush(PUSH_STATES.REGISTERED);
+      ui.setLocked(false);
+    } catch (err) {
+      const denied = err.code === 'PUSH_PERMISSION_DENIED';
+      diag.set({ init: denied ? 'stopped (permission denied)' : 'error', device: denied ? 'not registered (permission denied)' : `error (${err.code})` });
+      setPush(denied ? PUSH_STATES.DENIED : PUSH_STATES.ERROR);
+    } finally {
+      if (client.pushEnabled && !dryRun) diag.set(await describeServiceWorker(workerPath));
+    }
   }
-  ui.setBusy(false);
+
+  optIn?.onActivate(async () => {
+    setPush(PUSH_STATES.REQUESTING);
+    const answer = await permissions.request();
+    diag.info('Notification permission answer', { permission: answer });
+    if (answer === 'granted') await startRegistration();
+    else setPush(answer === 'denied' ? PUSH_STATES.DENIED : PUSH_STATES.DISMISSED);
+  });
+
+  if (!client.pushEnabled) {
+    await startRegistration();
+  } else if (!permissions.supported()) {
+    setPush(PUSH_STATES.UNSUPPORTED);
+    diag.set({ device: 'unsupported browser' });
+  } else {
+    const current = permissions.state();
+    diag.set({ permission: current });
+    if (current === 'granted') await startRegistration();  // returning visitor: no prompt
+    else setPush(current === 'denied' ? PUSH_STATES.DENIED : PUSH_STATES.DEFAULT);
+    if (!dryRun) diag.set(await describeServiceWorker(workerPath));
+  }
 
   panel?.onReset(async () => {
-    try { await diag.step('unlink', null, () => client.reset()); } catch { /* shown in log */ }
+    if (client.initialized) {
+      try { await diag.step('unlink', { channel: client.channelName }, () => client.reset()); } catch { /* shown in log */ }
+    }
     guard.reset();
-    diag.set({ identity: 'anonymous', externalId: null, lastConfirmation: null });
+    identityStore.forget();
     location.reload();
   });
 
+  // --- Form -------------------------------------------------------------------
   ui.form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     status.textContent = '';
@@ -128,7 +212,9 @@ async function main() {
     const { values, honeypot } = ui.read();
     ui.setBusy(true);
     try {
-      const result = await runLeadFlow({ config, rawValues: values, honeypot, client, guard, diag, simulated: dryRun });
+      const result = await runLeadFlow({
+        config, rawValues: values, honeypot, client, guard, diag, identityStore, simulated: dryRun,
+      });
       if (result.status === 'invalid') { ui.showErrors(result.errors); return; }
       ui.showErrors({});
       if (result.status === 'blocked') {
@@ -142,10 +228,13 @@ async function main() {
       formHost.replaceChildren(done);
     } catch (err) {
       status.className = 'status status-error';
-      status.textContent = `${STEP_LABEL[err.step] ?? 'Algo salió mal.'} Inténtalo de nuevo en unos segundos.`;
+      status.textContent = err.step === 'device'
+        ? STEP_LABEL.device
+        : `${STEP_LABEL[err.step] ?? 'Algo salió mal.'} Inténtalo de nuevo en unos segundos.`;
       if (debug) status.textContent += ` [${err.step} · ${err.code}]`;
     } finally {
       ui.setBusy(false);
+      if (client.pushEnabled && !client.deviceId) ui.setLocked(true);
     }
   });
 }
@@ -156,7 +245,8 @@ function createPanel() {
   const title = h('h2', {}, 'Diagnóstico');
   const stateEl = h('dl', { class: 'diag-state' });
   const legend = h('p', { class: 'diag-legend' },
-    'ACCEPTED_BY_API = el SDK devolvió éxito. La ejecución del Customer Journey solo se confirma en la consola de indigitall.');
+    'Etapas: SDK cargado → SDK inicializado → dispositivo registrado → usuario identificado → evento aceptado (ACCEPTED_BY_API). '
+    + 'La ejecución del Customer Journey solo se confirma en la consola de indigitall.');
   const reset = h('button', { type: 'button', class: 'secondary' }, 'Nueva sesión (unlink)');
   const log = h('ol', { class: 'diag-log' });
   box.append(title, stateEl, legend, reset, log);
@@ -168,9 +258,20 @@ function createPanel() {
       const rows = {
         'Modo': state.mode,
         'SDK (declarada / cargada)': `${state.sdkDeclaredVersion ?? '—'} / ${state.sdkVersion ?? '—'}`,
-        'Inicialización': state.init,
-        'Identificación': state.identity,
+        '1 · SDK cargado': state.sdk,
+        '2 · SDK inicializado': state.init,
+        'Permiso de notificaciones': state.permission ?? '—',
+        'Service Worker URL': state.swUrl ?? '—',
+        'Service Worker estado': state.sw ?? '—',
+        'Otros Service Workers del sitio': state.swOthers ?? '—',
+        '3 · Dispositivo': state.device,
+        'Device ID': state.deviceId ?? '—',
+        'Canal de vinculación': state.linkChannel ?? '—',
+        '4 · Identificación': state.identity,
         'External ID': state.externalId ? maskValue('externalId', state.externalId) : '—',
+        'Persistencia CDP': state.cdp ?? '—',
+        'Verificación del perfil': state.verification ?? '—',
+        '5 · Evento': state.event ?? '—',
         'Última confirmación': state.lastConfirmation ?? '—',
       };
       stateEl.replaceChildren();

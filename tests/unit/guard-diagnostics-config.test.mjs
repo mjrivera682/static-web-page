@@ -92,6 +92,13 @@ test('config: live mode needs a real appKey', () => {
   assert.deepEqual(validateConfig(c), []);
 });
 
+test('config: live mode needs Web Push enabled (SDK 4.18.1 link requires it)', () => {
+  const c = structuredClone(base);
+  c.mode = 'live';
+  c.indigitall.pushMode = 'disabled';
+  assert.ok(validateConfig(c).some((p) => p.includes('pushMode "enabled"')));
+});
+
 test('config: identity strategy must match a required field', () => {
   const c = structuredClone(base);
   c.identity.strategy = 'phone';

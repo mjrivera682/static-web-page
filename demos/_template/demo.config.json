@@ -8,7 +8,7 @@
     "sdkVersion": "4.18.1",
     "appKey": "REPLACE_WITH_DEMO_APP_KEY",
     "urlDeviceApi": null,
-    "pushMode": "disabled",
+    "pushMode": "enabled",
     "logLevel": "ERROR"
   },
   "identity": {

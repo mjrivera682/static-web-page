@@ -85,6 +85,11 @@ export function renderForm(doc, container, config) {
       const first = config.fields.find((f) => errors[f.id]);
       if (first) form.elements[first.id].focus();
     },
+    /** Disable the submit button without changing its label (e.g. until push is ready). */
+    setLocked(locked) {
+      button.disabled = locked;
+      form.dataset.locked = locked ? 'true' : 'false';
+    },
     setBusy(busy) {
       button.disabled = busy;
       button.textContent = busy ? (config.busyLabel ?? 'Enviando…') : (config.submitLabel ?? 'Enviar');

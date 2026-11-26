@@ -111,6 +111,12 @@ button:disabled { opacity: 0.6; cursor: progress; }
 .notice-error { background: var(--error-bg); color: var(--error); }
 .notice-details { color: var(--muted); font-size: 0.9rem; }
 
+.optin { display: grid; gap: 10px; }
+.optin p { margin: 0; }
+.optin button { justify-self: start; }
+.optin.notice-success { font-weight: 400; margin-bottom: 16px; }
+.lead-form[data-locked="true"] { opacity: 0.75; }
+
 .status { margin-top: 12px; }
 .status:empty { display: none; }
 .status-error { color: var(--error); }

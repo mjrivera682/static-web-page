@@ -19,15 +19,23 @@ tests/unit/                      pruebas: node --test "tests/unit/*.test.mjs"
 `src/`, `dist/`, `indigitall/`, `service-worker.js` y la configuración de webpack son la
 implementación anterior. Se conservan para no romper URLs publicadas.
 
-## Flujo de Lead Capture (métodos documentados)
+## Flujo de Lead Capture (SDK 4.18.1)
 
-1. `indigitall.init({ appKey, disabledPushService: true })`: sin Web Push, sin permisos.
-2. `indigitall.link(externalId, indigitall.Channel.NONE)`
-3. `indigitall.assignOrUpdateValueToCustomerFields({ ... })`
-4. `indigitall.getCustomerInformation()`: verificación antes del evento (`flow.verifyProfile`).
-5. `indigitall.sendCustomerCustomEvent(eventCode, eventId, eventAt, data)`
+1. Opt-in: botón «Activar notificaciones» → `Notification.requestPermission()` en el clic
+   (gesto del usuario). Si el permiso ya estaba concedido no se vuelve a pedir.
+2. `indigitall.init({ appKey, workerPath, onInitialized, onError })` con Web Push activo.
+   El dispositivo está registrado cuando `onInitialized` entrega un `deviceId`.
+   Service Worker: `/static-web-page/vendor/indigitall/4.18.1/worker.min.js`.
+3. `indigitall.link(email, indigitall.Channel.PUSH)`: el SDK 4.18.1 rechaza `Channel.NONE`
+   (`DISABLED_CHANNEL`) y exige permiso de notificaciones concedido.
+4. `indigitall.assignOrUpdateValueToCustomerFields({ name, email, phone, lead_source })`
+5. `indigitall.getCustomerInformation()`: verificación antes del evento (`flow.verifyProfile`).
+6. `indigitall.sendCustomerCustomEvent(eventCode, data, eventId, eventAt, ok, err)`:
+   orden real del SDK 4.18.1 (la documentación muestra otro).
 
 Cada paso espera su callback de éxito. Si uno falla, el evento no se envía y no se muestra éxito.
+Si las notificaciones están bloqueadas, la página lo indica y no permite enviar: sin dispositivo
+registrado el SDK no puede identificar al cliente.
 
 ## Crear una demo
 
@@ -47,5 +55,5 @@ En modo dry-run, `?simulate-fail=<método>` simula un error del SDK (p. ej.
 - Las protecciones del formulario (doble envío, cooldown, honeypot) solo reducen ruido; no
   son seguridad. Para impedir abusos con coste (llamadas, WhatsApp), filtra en el Customer
   Journey (lista de contactos permitidos, límites de frecuencia).
-- Ninguna demo pide contraseñas ni permisos de notificaciones o ubicación. La validación de
+- Ninguna demo pide contraseñas ni permiso de ubicación. El permiso de notificaciones solo se pide al pulsar el botón de opt-in. La validación de
   configuración rechaza campos de contraseña o de pago.
